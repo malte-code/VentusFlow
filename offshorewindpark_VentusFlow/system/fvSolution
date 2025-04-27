@@ -1,0 +1,77 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v2212                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+
+FoamFile
+{
+    version     2.0;                    // OpenFOAM-Version
+    format      ascii;                   // Datei im ASCII-Format
+    class       dictionary;              // OpenFOAM-Dictionary-Datei
+    object      fvSolution;              // Name des Objekts (Löser- und Korrektoreinstellungen)
+}
+
+// ************************************************************************* //
+
+// Definition der numerischen Löser für verschiedene Felder
+solvers
+{
+    // Druckfeld-Löser p
+    p
+    {
+        solver          GAMG;             // Generalized Algebraic Multigrid (GAMG)
+        tolerance       0;                // Absoluter Toleranzwert für Konvergenz (hier deaktiviert)
+        relTol          0.05;             // Relative Toleranz (Konvergenzkriterium)
+        smoother        GaussSeidel;      // Glättungsalgorithmus: Gauss-Seidel
+        cacheAgglomeration true;          // Agglomeration aktiv für bessere Konvergenz
+        nCellsInCoarsestLevel 100;        // Minimale Zellanzahl auf der grobsten Ebene
+        agglomerator    faceAreaPair;     // Methode zur Zellagglomeration (Flächenpaare)
+        mergeLevels     1;                // Anzahl der Zusammenführungslevel
+    }
+
+    // Endkorrektur-Löser für Druck (Final)
+    pFinal
+    {
+        $p;                               // Übernimmt die Parameter von `p`
+        smoother        DICGaussSeidel;   // Diskrete Inkompressible Korrektur (DIC) mit Gauss-Seidel
+        tolerance       1e-06;            // Höhere absolute Toleranz für finale Iteration
+        relTol          0.01;             // Niedrigere relative Toleranz für finale Konvergenz
+    }
+
+    // Geschwindigkeits- und Turbulenzfeld-Löser für U, k, und ν~
+    "(U|k|nuTilda)"
+    {
+        //solver          PBiCGStab;      // Alternative: Prä-konditionierter BiCG-Stab-Löser
+        //preconditioner  DILU;           // Diagonale inkomplette LU-Zerlegung
+        solver          smoothSolver;     // Glättungsbasierter iterativer Löser
+        smoother        symGaussSeidel;   // Symmetrisches Gauss-Seidel-Verfahren
+        tolerance       1e-08;            // Sehr niedrige absolute Toleranz für hohe Genauigkeit
+        relTol          0.1;              // Relative Toleranz
+        maxIter         5;                // Maximale Iterationen pro Zeitschritt
+    }
+
+    // Endkorrektur-Löser für U, k und ν~
+    "(U|k|nuTilda)Final"
+    {
+        $U;                               // Übernimmt die Parameter von `(U|k|nuTilda)`
+        tolerance       1e-08;            // Sehr geringe absolute Toleranz
+        relTol          0.05;             // Genauere relative Toleranz in der finalen Iteration
+    }
+}
+
+// ************************************************************************* //
+
+// PIMPLE-Korrektoreinstellungen für die Druck-Geschwindigkeits-Kopplung
+PIMPLE
+{
+    nOuterCorrectors 1;                   // Anzahl äußerer Korrekturen (für PIMPLE)
+    nCorrectors     3;                    // Anzahl der inneren Druckkorrekturen
+    nNonOrthogonalCorrectors 0;            // Korrekturen für nicht-orthogonale Netze (0 für gut ausgerichtete Netze)
+    pRefCell        1001;                  // Referenzzelle für Druck (Vermeidung von Singularitäten)
+    pRefValue       0;                     // Referenzwert für Druck
+}
+
+// ************************************************************************* //

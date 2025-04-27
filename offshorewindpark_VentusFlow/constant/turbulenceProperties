@@ -1,0 +1,98 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2212                                  |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+
+FoamFile
+{
+    version     2.0;                    // OpenFOAM-Version
+    format      ascii;                   // Dateiformat (ASCII)
+    class       dictionary;              // Datei enthält ein OpenFOAM-Dictionary
+    location    "constant";              // Speicherort der Datei
+    object      turbulenceProperties;    // Objektname der Datei
+}
+
+// ************************************************************************* //
+
+// Simulationsmodell: Large Eddy Simulation (LES) zur direkten Auflösung großer Turbulenzstrukturen
+simulationType LES;
+
+LES
+{
+    LESModel        WALE;       // LES-Modell: WALE (Wall-Adapting Local Eddy-Viscosity)
+
+    turbulence      on;         // Aktivierung der Turbulenzmodellierung
+
+    printCoeffs     on;         // Ausgabe der Modellkoeffizienten für Diagnosezwecke
+
+    delta           cubeRootVol; // Berechnung der charakteristischen Gitterskalierung `Δ` 
+                                 // basierend auf dem Würfelwurzelvolumen jedes Rechengitters
+
+    // Koeffizienten für die Berechnung von `Δ`
+    cubeRootVolCoeffs
+    {
+        deltaCoeff      1;      // Skalierungsfaktor für `Δ`
+    }
+
+    // Prandtl-Koeffizienten für turbulente Mischungsmechanismen
+    PrandtlCoeffs
+    {
+        delta           cubeRootVol; // Verwendung von `cubeRootVol` für die Berechnung von `Δ`
+
+        cubeRootVolCoeffs
+        {
+            deltaCoeff      1;
+        }
+
+        smoothCoeffs
+        {
+            delta           cubeRootVol;
+            cubeRootVolCoeffs
+            {
+                deltaCoeff      1;
+            }
+            maxDeltaRatio   1.1; // Maximales Verhältnis zwischen benachbarten `Δ`-Werten
+        }
+
+        Cdelta          0.158;  // WALE-spezifischer Modellkoeffizient zur Berechnung von `ν_t`
+    }
+
+    // Van-Driest-Dämpfung zur Turbulenzdämpfung in wandnahen Bereichen
+    vanDriestCoeffs
+    {
+        delta           cubeRootVol;
+        cubeRootVolCoeffs
+        {
+            deltaCoeff      1;
+        }
+
+        smoothCoeffs
+        {
+            delta           cubeRootVol;
+            cubeRootVolCoeffs
+            {
+                deltaCoeff      1;
+            }
+            maxDeltaRatio   1.1;
+        }
+
+        Aplus           26;     // Van-Driest-Konstante für wandnahe Dämpfung
+        Cdelta          0.158;  // WALE-spezifischer Modellkoeffizient zur Berechnung von `ν_t`
+    }
+
+    // Glättung der `Δ`-Berechnung zur Vermeidung numerischer Instabilitäten
+    smoothCoeffs
+    {
+        delta           cubeRootVol;
+        cubeRootVolCoeffs
+        {
+            deltaCoeff      1;
+        }
+        maxDeltaRatio   1.1; // Maximales Verhältnis für Glättungseffekte
+    }
+}
+
+// ************************************************************************* //

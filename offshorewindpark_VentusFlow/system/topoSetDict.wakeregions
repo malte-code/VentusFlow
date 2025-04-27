@@ -1,0 +1,43 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \    /   O peration     | Version:  v2212                                 |
+|   \  /    A nd           | Website:  www.openfoam.com                      |
+|    \/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      topoSetDict;
+}
+
+// ************************************************************************* //
+#include "$FOAM_CASE/system/initialConditions"
+
+actions
+(
+    /*
+    { // Original turbine refinement
+        name        turbineName;
+        type        cellSet;
+        action      new;
+        source      sphereToCell;
+        origin      ( shiftedX shiftedY hubHeight );
+        // radius      turbine_data.sphereRadius;
+    }
+    */
+
+    // New wake region refinement using boxToCell based on wake.id
+    {
+        name        WakeRegion_1;
+        type        cellSet;
+        action      new;
+        source      boxToCell;
+        box (-667.6825280761113 -345.015408619307 0) (652.3174719238887 350.46229293756187 360);
+    }
+
+);
+// ************************************************************************* //

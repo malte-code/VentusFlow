@@ -1,0 +1,36 @@
+#!/bin/sh
+
+### Script for preparing the grid for the offshore wind park simulation
+### HLRS, 2024-2025
+
+. $WM_PROJECT_DIR/bin/tools/RunFunctions
+
+loopRefineMesh () {
+    for SET in WakeRegion_1 ; do
+        sed -i "0,/set [a-zA-Z0-9_]*/s//set ${SET}/" system/refineMeshDict.wakeregions 
+        runApplication -s wake_${SET} refineMesh -overwrite -dict system/refineMeshDict.wakeregions
+    done
+}
+
+runApplication blockMesh -dict system/blockMeshDict
+
+runApplication -s refine1 topoSet -dict system/topoSetDict.refine1
+runApplication -s refine1 refineMesh -overwrite -dict system/refineMeshDict.refine1
+runApplication -s refine2 topoSet -dict system/topoSetDict.refine2
+runApplication -s refine2 refineMesh -overwrite -dict system/refineMeshDict.refine2
+runApplication -s refine3 topoSet -dict system/topoSetDict.refine3
+runApplication -s refine3 refineMesh -overwrite -dict system/refineMeshDict.refine3
+
+runApplication -s wakeregions topoSet -dict system/topoSetDict.wakeregions
+loopRefineMesh
+
+
+runApplication -s iter1 transformPoints -rollPitchYaw '(0 0 0.0)'
+
+runApplication checkMesh
+runApplication foamToVTK
+
+restore0Dir 
+runApplication decomposePar 
+runParallel renumberMesh -overwrite 
+grep -i 'error' log.* || echo 'no errors!' 

@@ -1,0 +1,25 @@
+{
+  "name": "ventusflow-webgui",
+  "version": "1.0.0",
+  "description": "VentusFlow WebGUI für OpenFOAM offshore Windpark Simulation",
+  "scripts": {
+    "start": "concurrently \"node backend/server.js\" \"vite --open\"",
+    "dev": "vite",
+    "build": "vite build",
+    "serve": "concurrently \"node backend/server.js\" \"vite preview --open\""
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "ol": "latest",
+    "ssh2": "^1.16.0",
+    "ws": "^8.13.0"
+  },
+  "engines": {
+    "node": ">=16"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "vite": "^6.2.1"
+  }
+}

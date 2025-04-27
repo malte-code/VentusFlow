@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="https://openlayers.org/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OpenLayers Toolbar & Draw</title>
+    <script type="module" crossorigin src="/assets/index-BEK9N7Dl.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-dAz20aXo.css">
+  </head>
+  <body>
+
+    <!-- Karte (GoogleStreetMaps) -->
+    <div id="map"></div>
+    
+    <!-- Toolbar -->
+    <div id="toolbar">
+
+      <!--Dropdown-->
+      <select id="shapesDropdown">
+        <option value="None" selected>None</option>
+        <option value="Point">Turbine</option>
+        <option value="Rectangle">Simulationsgebiet</option>
+        <!-- <option value="Square">Square</option> -->
+      </select>
+
+      <!--Winddirection Slider-->
+      <input id="windDirectionSlider" type="range" min="0" max="360" value="0" step="1" />
+      <span id="windDirectionValue">0°</span>
+
+      <!--Select Button-->
+      <button id="selectShapesButton" title="Toggle Edit Mode">edit shapes</button>
+
+      <!--Clear Shapes Button-->
+      <button id="clearShapesButton" title="Delete Shapes">🗑️</button>
+
+      <!--Modal JSON viewer-->
+      <!-- <button id="showJsonButton">JSON anzeigen</button> -->
+
+      <!--Export Button-->
+      <button id="exportButton" title="Export Shapes">CreateCase</button>
+
+    </div>
+
+    <!-- Modal-Fenster für JSON -->
+    <!-- <div id="jsonModal" class="modal" style="display: none;">
+      <div class="modal-content" style="background: #fff; padding: 20px; border: 1px solid #ccc; width: 80%; margin: 50px auto; position: relative;">
+        <span id="closeModalButton" style="position: absolute; top: 10px; right: 10px; cursor: pointer;">&times;</span>
+        <pre id="jsonContent" style="white-space: pre-wrap; word-wrap: break-word;"></pre>
+      </div>
+    </div> -->
+
+    <!-- Parameter Panel -->
+    <!---->
+    <div id="PanelRight">
+
+      <!-- Toggle-Button oben am Panel -->
+      <button id="togglePanelRight">«</button>
+
+      <!-- Simulationsgebiet -->
+      <h3>Simulationsgebiet</h3>
+      <div class="parameter-row">
+        <label for="widthInput">Breite (m):</label>
+        <input type="number" id="widthInput" value="0" step="10">
+
+        <label for="depthInput">Tiefe (m):</label>
+        <input type="number" id="depthInput" value="0" step="10">
+      </div>
+
+      <!-- Umgebungsparameter -->
+      <h3>Umgebungsparameter</h3>
+      <div class="parameter-row">
+        <label for="windSpeed">Windgeschwindigkeit (m/s):</label>
+        <input type="number" id="windSpeed" value="8.0" step="0.1">
+
+        <label for="turbIntensity">Turbulenzintensität (%):</label>
+        <input type="number" id="turbIntensity" value="5.9" step="0.1">
+
+        <label for="profileHeights">Profilhöhen (m, Komma getrennt):</label>
+        <input type="text" id="profileHeights" value="5,15,25,35,45,55,65,75,85,95,102,105,115,125,135,145,155,165,175,185,195,250,300,350,400,450,500,1500">
+
+        <label for="cellDensity">Zellendichte (cells/m²):</label>
+        <input type="number" id="cellDensity" value="0.25" step="0.1">
+      </div>
+
+      <!-- Solver Settings -->
+      <h3>Löser Einstellungen</h3>
+      <div class="parameter-row">
+        <label for="startTime">Startzeit (s):</label>
+        <input type="number" id="startTime" value="0" step="1">
+
+        <label for="endTime">Endzeit (s):</label>
+        <input type="number" id="endTime" value="500" step="1">
+
+        <label for="deltaT">Zeitschritt (s):</label>
+        <input type="number" id="deltaT" value="0.05" step="0.01">
+
+        <label for="writeInterval">Schreibintervall:</label>
+        <input type="number" id="writeInterval" value="20" step="1">
+
+        <label for="computeCores">compute cores</label>
+        <input type="number" id="computeCores" value="80" step="1">
+      </div>
+
+    </div>
+    
+ 
+    <!-- TurbinenPanel -->
+    <!---->
+    <div id="TurbinenPanel">
+      <!-- Toggle-Button oben am Panel -->
+      <button id="toggleTurbinenPanel">»</button>
+
+      <!-- Turbinenspezifische Parameter -->
+      <h3>Turbine</h3>
+      <div class="parameter-row">
+        <label for="turbineTypeDropdown">Turbinentyp:</label>
+        <select id="turbineTypeDropdown">
+          <option value="NREL6MW_17" selected>NREL6MW_17element</option>
+          <option value="NREL15MW_17">NREL15MW_17element</option>
+        </select>
+
+        <label for="hubHeight">Nabenhöhe [m]:</label>
+        <input type="number" id="hubHeight" value="102" step="1">
+      </div>
+
+      <div class="parameter-row">
+        <div>
+          <label for="rotorRadius">RotorRadius[m]:</label>
+          <span id="rotorRadius">77</span>
+        </div>
+        <div>
+          <label for="tipSpeedRatio">Tip Speed Ratio:</label>
+          <span id="tipSpeedRatio">6.8</span>
+        </div>
+      </div>
+
+      <h3>Nachlaufeffekt</h3>
+      <div class="parameter-row">
+
+        <label for="sphereRadius">Wake Radius Skalar [m]:</label>
+        <input type="number" id="sphereRadius" value="2" step="1">
+
+        <label for="wakeDepth">Wake Tiefe Skalar [m]:</label>
+        <input type="number" id="wakeDepth" value="10" step="1">
+      </div>
+
+      <h3>Berechnungsmodel</h3>
+      <div class="parameter-row">
+        <label for = "stallType">Stall Typ:</label>
+        <select id="stallType">
+          <option value="dynamicStall">dynamic stall</option>
+          <option value="fixedStall">fixed Stall</option>
+        <select>
+      
+        <label for="stallModel">Stall Model:</label>
+        <select id="stallModel">
+          <option value="LeishmanBeddoes">LeishmanBeddoes</option>
+        </select>
+      
+        <label for = "endEffectsModel">EndEffects Model:</label>
+        <select id="endEffectsModel">
+          <option value="shen">Shen</option>
+          <option value="glaudert">Glaudert</option>
+        <select>
+      </div>
+
+      <h3>Komponenten</h3>
+      <div class="parameter-row">
+        <div>
+          <input type="checkbox" id="tower" checked />
+          <label for="tower">Tower</label>
+        </div>
+        <div>
+          <input type="checkbox" id="hub" checked />
+          <label for="hub">Hub</label>
+        </div>
+
+      </div>
+    </div>  
+    <!-- Terminal Output Panel -->
+    <div id="terminal-output">
+      <pre id="output"></pre>
+    </div>
+
+    <!-- OpenFOAM Control: PRE (links neben dem Terminal) -->
+    <div id="OFLeftButtons">
+      <h3>PRE</h3>
+      <div class="parameter-row">
+        <button id="LocalToRemoteButton">Setup: Local -> Remote</button>
+
+        <button id="allCleanButton">Allclean</button>
+
+        <button id="allPreButton">Allpre</button>
+      </div>
+    </div>
+
+    <!-- OpenFOAM Control: Solve & POST (rechts neben dem Terminal) -->
+    <div id="OFRightButtons">
+      <h3>SOLVER & POST</h3>
+      <div class="parameter-row">
+        <button id="allRunSlurmButton">Allrun.slurm</button>
+
+        <button id="CalcStatusButton">Calculation Status</button>
+
+        <button id="allPostButton">Allpost</button>
+
+        <button id="getVTKButton">VTK: Remote -> Local</button>
+      </div>
+      <!-- <div class="parameter-row">
+        <button id="allRunButton">All</button>
+      </div> -->
+
+    </div>
+
+    <!-- Passphrase-Modal für SSH-Verbindungen -->
+    <div id="passphrase-modal-container" style="display: none;">
+      <div class="modal-content">
+        <h3 id="passphrase-title">SSH-Key Passphrase benötigt</h3>
+        
+        <!-- Server Connection Settings -->
+        <div class="connection-settings" style="text-align: center;">
+          <div class="setting-row">
+            <label for="rootFolder">Root Folder:</label>
+            <input type="text" id="rootFolder" name="rootFolder" value="offshorewindpark_VentusFlow" style="width:80%;" />
+          </div>
+          <div class="setting-row">
+            <label for="userInput">Username:</label>
+            <input type="text" id="userInput" value="hpcschud" style="width:80%;" />
+          </div>
+          <div class="setting-row">
+            <label for="hostInput">Host:</label>
+            <input type="text" id="hostInput" value="visent.hlrs.de" style="width:80%;" />
+          </div>
+          <div class="setting-row">
+            <label for="remoteDirInput">Remote Directory:</label>
+            <input type="text" id="remoteDirInput" value="/home/hpcschud/OpenFOAM/hpcschud-v2212/run/VentusFlow" style="width:80%;" />
+          </div>
+        </div>
+        
+        <p id="passphrase-description">Bitte gib die Passphrase für deinen SSH-Key ein:</p>
+        <input type="password" id="ssh-passphrase" style="width: 100%; padding: 8px; margin-bottom: 15px;" placeholder="SSH-Key Passphrase">
+        <div style="display: flex; justify-content: flex-end;">
+          <button id="cancel-passphrase-button" style="margin-right: 10px;">Abbrechen</button>
+          <button id="submit-passphrase-button">Verbinden</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Das alte Password-Modal kann entfernt werden -->
+    <!-- <div id="password-modal-container" style="display: none;">
+      ...
+    </div> -->
+
+    <!-- JavaScript-Einbindung -->
+  </body>
+</html>

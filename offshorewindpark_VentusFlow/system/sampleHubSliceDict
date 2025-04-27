@@ -1,0 +1,37 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2212                                  |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      sampleHubSliceDict;
+}
+
+interpolationScheme cellPoint;
+setFormat raw;
+
+sets
+(
+    hubSlice
+    {
+        type            uniform;
+        axis            z;
+        // Hier werden die Grenzen des gesamten Simulationsgebiets in x und y
+        // festgelegt und z wird auf die gewünschte Nabenhöhe (z.B. 102) gesetzt.
+        start           (305658 5958030 102);
+        end             (319500 5971870 102);
+        // Definiere die Anzahl der Punkte in x und y; in z ist es 1, da es ein horizontaler Schnitt ist.
+        nPoints         (101 101 1);
+    }
+);
+
+fields
+(
+    U
+);

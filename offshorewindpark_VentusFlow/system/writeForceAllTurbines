@@ -1,0 +1,46 @@
+writeForceAllTurbines
+{
+// Script to sum up the fields from all wind turbines `force.turbineXXX` into a single field `forceAllTurbines.write`
+// for visualization
+// HLRS, 2024-2025
+
+    libs            (utilityFunctionObjects);
+    type            coded;
+    name            writeForceAllTurbines;
+    writeControl    adjustableRunTime;
+    writeInterval   10.0;
+
+    codeWrite
+    #{
+
+        volScalarField forceAllTurbines
+        (
+            IOobject
+            (
+                "forceAllTurbines",
+                mesh().time().timeName(),
+                mesh(),
+                IOobject::NO_READ,
+                IOobject::AUTO_WRITE
+            ),
+            mesh(),
+            dimensionedScalar("zero", dimensionSet(0,1,-2,0,0,0,0), 0.0)
+        );
+
+        Foam::word fields[] = {
+            "force.Turbine_1",
+            "force.Turbine_2",
+            "force.Turbine_3",
+        };
+
+        Info << "Reading forces ";
+        for (Foam::word i : fields) {
+           Info << "i " << i;
+           const volVectorField& forceTemp = mesh().lookupObject<volVectorField>(i);
+           forceAllTurbines = forceAllTurbines + mag(forceTemp);
+        }
+
+        forceAllTurbines.write();
+        Info << endl <<"forceAllTurbines volScalarField written" << endl;
+    #};
+}

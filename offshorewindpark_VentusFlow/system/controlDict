@@ -1,0 +1,64 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \    /   O peration     | Version:  2212                                  |
+|   \  /    A nd           | Website:  www.openfoam.com                      |
+|    \/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+
+FoamFile
+{
+    version     2.0;                    // OpenFOAM-Version
+    format      ascii;                   // Datei im ASCII-Format
+    class       dictionary;              // OpenFOAM-Dictionary
+    location    "system";                // Speicherort der Datei
+    object      controlDict;             // Name des Objekts
+}
+
+// ************************************************************************* //
+
+// Anwendung: Definiert den verwendeten OpenFOAM-Solver
+application     pimpleFoam;              // PIMPLE-Solver für inkompressible, instationäre Strömung
+
+// Startoptionen der Simulation
+startFrom       startTime;               // Simulation beginnt bei startTime
+startTime       0;                       // Startzeit der Simulation
+
+// Stoppkriterium für die Simulation
+stopAt          endTime;                 // Simulation läuft bis `endTime`
+endTime         500;                     // Endzeitpunkt der Simulation (physikalische Zeit in Sekunden)
+
+// Zeitschrittgröße
+deltaT          0.05;                    // Zeitschrittweite Δt = 0.5s (LES erfordert kleine Zeitschritte)
+
+// Steuerung der Datenausgabe
+writeControl    adjustableRunTime;       // Ausgabe basierend auf dynamischer Simulationszeit
+writeInterval   20;                    // Ausgabeintervall für Ergebnisse (wenn, = endtime, dann keine speicherung der Ergebnisse des gesamten Gebietes)
+
+// Speicherverwaltung für Ausgabe
+purgeWrite      0;                        // Keine alten Ausgabedateien löschen
+writeFormat     binary;                   // Speicherung im binären Format (platzsparend)
+writePrecision  6;                        // Genauigkeit der Ausgabedaten (6 Dezimalstellen)
+writeCompression off;                     // Keine Komprimierung der Ergebnisse
+
+// Zeitformat für Ausgabe
+timeFormat      general;                  // Ausgabe im allgemeinen Zeitformat
+timePrecision   6;                        // Genauigkeit der Zeitausgabe (6 Dezimalstellen)
+
+// Laufzeitmodifikation
+runTimeModifiable yes;                    // Simulationseinstellungen können während der Laufzeit geändert werden
+
+// Einbindung von dynamischen Bibliotheken für die Simulation
+libs ("libturbinesFoam.so" "libatmosphericModels.so"); // Turbinen- und atmosphärische Modellbibliotheken
+
+// Funktionen für die Simulation
+functions
+{
+   //#include "fieldAverage"               // Berechnet Mittelwerte von Strömungsgrößen
+   //#include "monitorPoints"              // Definiert Messpunkte zur Überwachung der Strömung
+   //#include "writeRegisteredObject"      // Speichert registrierte OpenFOAM-Objekte
+   //#include "writeForceAllTurbines"      // Erfasst Kräfte auf alle Windturbinen
+   #include "sampleSliceDict"       // (Deaktiviert) Mögliche Extraktion von Querschnitten
+}
+
+// ************************************************************************* //

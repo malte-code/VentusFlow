@@ -1,0 +1,68 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v2212                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+
+FoamFile
+{
+    version     2.0;                    // OpenFOAM-Version
+    format      ascii;                   // Dateiformat (ASCII)
+    class       dictionary;              // Datei enthält ein OpenFOAM-Dictionary
+    object      fvSchemes;               // Name des Objekts (Diskretisierungsschemata)
+}
+
+// ************************************************************************* //
+
+// Zeitschema für die Zeitableitung d/dt
+ddtSchemes
+{
+    default         backward;  // Rückwärts-Euler-Schema (implizit, 2. Ordnung)
+}
+
+// Diskretisierung des Gradientenoperators ∇
+gradSchemes
+{
+    default         Gauss linear;  // Standard-Gauss-Integration mit linearer Interpolation
+}
+
+// Diskretisierung des Divergenzoperators ∇⋅
+divSchemes
+{
+    default         none;  // Kein Standardwert für Divergenzoperatoren
+
+    div(phi,U)      Gauss filteredLinear3V 1; // Filtered Linear Scheme für LES
+    div(phi,k)      Gauss limitedLinear 1;    // Begrenzt lineares Schema für k-Gleichung
+    div(phi,B)      Gauss limitedLinear 1;    // Begrenzt lineares Schema für B-Feld
+    div(B)          Gauss linear;             // Lineare Diskretisierung des Magnetfeldes B
+    div(phi,nuTilda) Gauss limitedLinear 1;   // Begrenzt lineares Schema für ν~
+    div((nuEff*dev2(T(grad(U))))) Gauss linear; // Diskretisierung des Scherspannungstensors
+}
+
+// Diskretisierung des Laplace-Operators ∇²
+laplacianSchemes
+{
+    default         Gauss linear corrected; // Lineares Gauss-Schema mit Korrektur
+}
+
+// Interpolationsmethoden für Zell-zu-Knoten-Werte
+interpolationSchemes
+{
+    default         linear;  // Lineare Interpolation
+}
+
+// Diskretisierung des Normalgradienten (snGrad)
+snGradSchemes
+{
+    default         corrected;  // Korrigiertes Verfahren für Normalgradienten
+}
+
+// Wandabstandsberechnung für Turbulenzmodelle
+wallDist
+{
+    method meshWave;  // Wandabstand basierend auf Wellenausbreitung im Netz
+}
+
+// ************************************************************************* //

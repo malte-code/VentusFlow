@@ -1,0 +1,534 @@
+/* ===== Imports ===== */
+@import "ol/ol.css";
+
+/* ===== Variables ===== */
+:root {
+  /* Main layout proportions */
+  --toolbar-height: 5%;
+  --side-panel-width: 20%;
+  --terminal-height: 20%;
+  --map-margin-horizontal: 1.5%;
+
+  --terminal-width: 60%;
+
+}
+
+/* ===== Body ===== */
+html, body {
+  margin: 0;
+  height: 100%;
+}
+
+/* ===== MAP ===== */
+#map {
+  position: absolute;
+  top: var(--toolbar-height);
+  left: var(--map-margin-horizontal);
+  right: var(--map-margin-horizontal);
+  bottom: var(--terminal-height);
+}
+
+/* ===== Tooltip ===== */
+
+
+/* ===== Toolbar ===== */
+#toolbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: var(--toolbar-height);
+  background-color: #f4f4f4;
+  color: black;
+  display: flex;
+  align-items: center;
+  z-index: 1000;
+}
+/* Toolbar Elemente */
+#shapesDropdown {
+  width: 20%;
+  margin-right: 0.3%;
+  font-size: 1.5vw;
+}
+
+#windDirectionSlider {
+  width: 30%;
+  margin-right: 0.3%;
+}
+
+#windDirectionValue {
+  width: 3%;
+  font-size: 1.2vw;
+  margin-right: 0.3%;
+}
+
+#clearShapesButton {
+  width: 3%;
+  font-size: 1.5vw;
+  cursor: pointer;
+  border: none;
+  background-color: transparent;
+}
+
+/* #clearShapesButton:hover {
+  color: red;
+} */
+
+
+#rootFolder, #userInput, #hostInput, #remoteDirInput {
+  width: 10%;
+  height: 5%;
+  margin-right: 0%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+
+}
+
+#exportButton, #selectShapesButton {
+  /* font-size: 1vw;
+  width: 15%;
+  cursor: pointer;
+  overflow-y: auto;
+  box-sizing: border-box;
+  border: grey; */
+
+  font-size: 8px;
+  width: 10%;
+  margin: 0.5%;
+  cursor: pointer;
+  /* border: none; */
+  background-color: #ccc;
+  border-radius: 3px 3px 3px 3px;
+  padding: 5px;
+
+}
+
+/* Active button state for edit mode */
+#selectShapesButton.active {
+  background-color: #45a049 !important;
+  color: white;
+}
+
+/* ===== Side Panels (+Toggle) ===== */
+#TurbinenPanel, #PanelRight {
+  top: var(--toolbar-height);
+  width: var(--side-panel-width);
+  height: calc(100% - var(--toolbar-height));
+  position: fixed;
+  background-color: #f4f4f4;
+  padding: 15px;
+  overflow-y: auto;
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+  z-index: 4000;
+}
+
+/* Panel Left */
+#TurbinenPanel {
+  left: 0;
+  border-right: 1px solid #ccc;
+  transition: left 0.3s ease;
+}
+/* Panel Right */
+#PanelRight {
+  right: 0;
+  border-left: 1px solid #ccc;
+  transition: right 0.3s ease;
+}
+
+/* Panel Collapsed */
+#TurbinenPanel.collapsed {
+  left: calc(-1 * (var(--side-panel-width) - var(--map-margin-horizontal)));
+}
+#PanelRight.collapsed {
+  right: calc(-1 * (var(--side-panel-width) - var(--map-margin-horizontal)));
+}
+/*toggle panel*/
+#toggleTurbinenPanel, #togglePanelRight{
+  position: absolute;
+  width: 7%;
+  height: 5%;
+  cursor: pointer;
+  border: none;
+  background-color: grey;
+  border-radius: 5px 5px 5px 5px;
+
+}
+#toggleTurbinenPanel {
+  left: 94%;
+  transition: background-color 0.3s;
+}
+#togglePanelRight {
+  right: 94%;
+  transition: background-color 0.3s;
+}
+#toggleTurbinenPanel:hover, #togglePanelRight:hover {
+  background-color: orange;
+}
+
+/* Panel Header  */
+#TurbinenPanel h3, #PanelRight h3 {
+  margin: 1%;
+  text-align: center;
+  font-size: 12px;
+  color: black;
+}
+/* Panel Row */
+#TurbinenPanel .parameter-row, #PanelRight .parameter-row {
+  display: block;
+  align-items: center;
+  justify-content: space-between;
+  margin: 1%;
+  flex: 1;
+}
+
+#TurbinenPanel h3 + .parameter-row, #PanelRight h3 + .parameter-row {
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 5px;
+  background-color: lightgray;
+  margin-top: 0;
+}
+
+/*label*/
+#TurbinenPanel .parameter-row label, #PanelRight .parameter-row label {
+  display: flex;
+  text-align: left;
+  flex: 1;
+  font-size: 12px;
+  color: black;
+}
+/*input*/
+#TurbinenPanel .parameter-row input, #PanelRight .parameter-row input {
+  display: block;
+  margin: 0 auto;
+  padding: 1%;
+  font-size: 12px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  /* margin-left: 5px; */
+}
+
+.parameter-row input:focus {
+  border-color: #66afe9;
+  outline: none;
+  box-shadow: 0 0 5px rgba(102, 175, 233, 0.5);
+}
+
+/* specific Panel designs */
+#widthInput, #depthInput {
+  margin: 0 5px;
+  padding: 3px;
+  font-size: 12px;
+  width: 80px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+}
+
+/* recently added */
+#TurbinenPanel .parameter-row span {
+  font-size: 12px;
+  color: black;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-left: 5px;
+}
+
+#TurbinenPanel .parameter-row select {
+  display: block;
+  margin: 0 auto;
+  align-items: center;
+  padding: 1%;
+  font-size: 12px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+}
+
+#TurbinenPanel .parameter-row option {
+  display: block;
+  align-items: center;
+  padding: 1%;
+  font-size: 12px;
+  color: black;
+}
+
+#TurbinenPanel .parameter-row input[type="checkbox"], #PanelRight .parameter-row input[type="checkbox"] {
+  /* margin: 0; */
+  flex: 2;
+  align-self: center;
+  outline: none;
+  box-shadow: 0 0 5px rgba(102, 175, 233, 0.5);
+}
+
+/* ===== Terminal und OpenFOAM Control Buttons ===== */
+#OFLeftButtons {
+  left: 0;
+}
+#OFRightButtons {
+  right: 0;
+}
+#OFLeftButtons, #OFRightButtons {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  bottom: 0;
+  width: var(--side-panel-width);
+  height: var(--terminal-height);
+  position: fixed;
+  align-self:center;
+  align-items: center;
+  /* align-content: center; */
+  background-color: black;
+  padding: 10px;
+  /* overflow-y: auto; */
+  box-sizing: border-box;
+  margin-left: 1%;
+  margin-right: 1%;
+  z-index: 2000;
+  display: block;
+  /* flex-direction: column; */
+}
+
+#OFLeftButtons .parameter-row, #OFRightButtons .parameter-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  margin: 1%;
+  flex: 1;
+}
+#OFLeftButtons button, #OFRightButtons button {
+  font-size: 8px;
+  width: 60%;
+  padding: 3%;
+  align-content: center;
+  align-items: center;
+  text-align: center;
+  margin: 0.5%;
+  cursor: pointer;
+  /* background-color: #ccc; */
+  /* border-radius: 3px 3px 3px 3px; */
+}
+
+#OFLeftButtons h3, #OFRightButtons h3 {
+  text-align: center;
+  font-size: 8px;
+  margin-top: 0%;
+  margin-bottom: 3%;
+  color: lime;
+}
+
+/* Terminal */
+#terminal-output {
+  position: fixed;
+  top: calc(100% - var(--terminal-height));
+  left: var(--side-panel-width);
+  right: var(--side-panel-width);
+  height: var(--terminal-height);
+  background-color: black;
+  color: lime;
+  font-family: 'Courier New', Courier, monospace;
+  padding: 10px;
+  overflow-y: auto;
+  z-index: 3000;
+} 
+
+#output {
+  flex-grow: 1;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  max-height: 90%;
+  font-size: 8px;
+  line-height: 1;
+}
+
+/* === Passwort-Modal-Styles === */
+#password-modal-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999; /* Hoher z-index um sicherzustellen, dass es über allem anderen angezeigt wird */
+}
+
+#password-modal-container .modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 5px;
+  width: 400px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+#password-modal-container h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #333;
+}
+
+#password-modal-container p {
+  margin-bottom: 15px;
+}
+
+#password-modal-container input {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 15px;
+  box-sizing: border-box;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+#password-modal-container button {
+  padding: 8px 16px;
+  cursor: pointer;
+  border: none;
+  border-radius: 4px;
+  background-color: #4CAF50;
+  color: white;
+}
+
+#password-modal-container button:hover {
+  background-color: #45a049;
+}
+
+#password-modal-container button:first-child {
+  background-color: #f44336;
+}
+
+#password-modal-container button:first-child:hover {
+  background-color: #d32f2f;
+}
+
+/* Passphrase-Modal-Styles */
+#passphrase-modal-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999; /* Hoher z-index um sicherzustellen, dass es über allem anderen angezeigt wird */
+}
+
+#passphrase-modal-container .modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 5px;
+  width: 400px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+#passphrase-modal-container h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #333;
+}
+
+#passphrase-modal-container p {
+  margin-bottom: 15px;
+}
+
+#passphrase-modal-container input {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 15px;
+  box-sizing: border-box;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+#passphrase-modal-container button {
+  padding: 8px 16px;
+  cursor: pointer;
+  border: none;
+  border-radius: 4px;
+  background-color: #4CAF50;
+  color: white;
+}
+
+#passphrase-modal-container button:hover {
+  background-color: #45a049;
+}
+
+#passphrase-modal-container button:first-child {
+  background-color: #f44336;
+}
+
+#passphrase-modal-container button:first-child:hover {
+  background-color: #d32f2f;
+}
+
+/* Connection Settings in Modal */
+#passphrase-modal-container .connection-settings {
+  margin-bottom: 20px;
+  border: 1px solid #eee;
+  padding: 10px;
+  border-radius: 4px;
+  background-color: #f9f9f9;
+}
+
+#passphrase-modal-container .setting-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+#passphrase-modal-container .setting-row label {
+  width: 130px;
+  font-size: 14px;
+  color: #333;
+}
+
+#passphrase-modal-container .setting-row input {
+  flex: 1;
+  padding: 6px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+}
+
+/* ===== Ungenutzt ===== */
+/* #lassoButton {
+  padding: 5px 10px;
+  font-size: 16px;
+  cursor: pointer;
+  border: none;
+  background-color: transparent;
+} */
+
+/* #lassoButton:hover {
+  color: blue;
+} */
+
+/* Modal Container */
+/* .modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0, 0, 0, 0.4);
+} */
+/* Modal Content */
+/* .modal-content {
+  background-color: #fff;
+  margin: 15% auto;
+  padding: 20px;
+  border: 1px solid #888;
+  width: 80%;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+} */
+
+

@@ -1,0 +1,44 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \    /   O peration     | Version:  2212                                  |
+|   \  /    A nd           | Website:  www.openfoam.com                      |
+|    \/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Initial conditions of the offshore wind park simulation
+// HLRS, 2022-2023
+
+WindSpeed       8;
+
+WindDirMeteoRad    3.141592653589793;
+
+WindDirMeteoDeg    180.0;
+
+// TurbineRefine Settings
+
+sphereRadius    2;
+
+
+
+
+// ************************************************************************* //
+
+// WindDirMeteo
+UInitial
+(
+   -8.0
+   9.797174393178826e-16
+   0
+);
+
+// TurbineAxis
+axisInitial
+(
+   8.0
+   0.0
+   0
+);
+
+// ************************************************************************* //

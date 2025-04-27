@@ -1,0 +1,20 @@
+monitorPoints
+{
+    type probes;
+    enabled         false;
+    writeControl   timeStep;
+    writeInterval   10;
+    libs            ("libsampling.so");
+
+    probeLocations
+    (
+        (290745.74930888345 4115570.5540743554 100) // Monitoring for Turbine_1
+    );
+
+    fields
+    (
+        p
+        U
+        UMean
+    );
+}

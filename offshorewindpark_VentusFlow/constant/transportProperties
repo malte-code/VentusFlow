@@ -1,0 +1,31 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2212                                  |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+
+FoamFile
+{
+    version     2.0;                      // OpenFOAM-Version
+    format      ascii;                     // Datei im ASCII-Format
+    class       dictionary;                // OpenFOAM-Dictionary-Datei
+    location    "constant";                // Speicherort der Datei
+    object      transportProperties;       // Name des Objekts
+}
+
+// ************************************************************************* //
+
+// Mittlere Strömungsgeschwindigkeit (U̅) des Fluids
+// Dimensionsangabe: [L] [T]^-1 = m/s
+Ubar            [0 1 -1 0 0 0 0] (0.1335 0 0); // Mittlere Geschwindigkeit (x, y, z)
+
+// Wahl des Transportmodells
+transportModel  Newtonian;  // Newtonsches Fluidmodell (konstante Viskosität)
+
+// Kinematische Viskosität (ν) des Fluids
+// Dimensionsangabe: [L]^2 [T]^-1 = m²/s
+nu              [0 2 -1 0 0 0 0] 2e-05; // ν = 2×10⁻⁵ m²/s (entspricht Luft bei ca. 15°C)
+
+// ************************************************************************* //

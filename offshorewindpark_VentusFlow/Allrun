@@ -1,0 +1,18 @@
+#!/bin/sh
+
+### Script for running the offshore wind park simulation in parallel
+### HLRS, 2024-2025
+
+. $WM_PROJECT_DIR/bin/tools/RunFunctions
+
+rm log.foamToVTK log.pimpleFoam log.decomposePar log.reconstructPar log.renumberMesh  
+rm -rf VTK processor* 
+
+restore0Dir
+
+mpirun -np 80 pimpleFoam -parallel
+
+runApplication reconstructPar
+
+runApplication foamToVTK
+# -----------------------------------------------------------------------------

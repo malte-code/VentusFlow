@@ -1,0 +1,9 @@
+writeRegisteredObject
+{
+    enabled             false;
+    type                writeObjects;
+    libs                ("libutilityFunctionObjects.so");
+    writeControl    	adjustableRunTime;
+    writeInterval       10.0;
+    objects             (U);
+}

@@ -1,0 +1,218 @@
+{
+  "type": "export",
+  "user": "hpcschud",
+  "host": "visent.hlrs.de",
+  "remoteDir": "/home/hpcschud/OpenFOAM/hpcschud-v2212/run/VentusFlow",
+  "rootFolder": "offshorewindpark_VentusFlow",
+  "simulationArea": {
+    "coordinates": [
+      [
+        271546.2596411892,
+        6271741.565970803
+      ],
+      [
+        272987.31788093556,
+        6271741.565970803
+      ],
+      [
+        272987.31788093556,
+        6272571.780562222
+      ],
+      [
+        271546.2596411892,
+        6272571.780562222
+      ]
+    ],
+    "center": [
+      272266.7887610624,
+      6272156.673266512
+    ],
+    "dimensions": {
+      "width": 830.2145914193243,
+      "depth": 1441.0582397463731
+    },
+    "rotationAngle": 0
+  },
+  "wakeRegions": [
+    {
+      "id": "WakeRegion_1",
+      "coordinates": [
+        [
+          271666.640978077,
+          6271811.657857893
+        ],
+        [
+          272590.640978077,
+          6271811.657857893
+        ],
+        [
+          272590.640978077,
+          6272119.657857893
+        ],
+        [
+          271666.640978077,
+          6272119.657857893
+        ],
+        [
+          271666.640978077,
+          6271811.657857893
+        ]
+      ],
+      "center": [
+        272128.640978077,
+        6271965.657857893,
+        924
+      ]
+    },
+    {
+      "id": "WakeRegion_2",
+      "coordinates": [
+        [
+          271599.10623298626,
+          6272067.13555945
+        ],
+        [
+          272919.10623298626,
+          6272067.13555945
+        ],
+        [
+          272919.10623298626,
+          6272507.13555945
+        ],
+        [
+          271599.10623298626,
+          6272507.13555945
+        ],
+        [
+          271599.10623298626,
+          6272067.13555945
+        ]
+      ],
+      "center": [
+        272259.10623298626,
+        6272287.13555945,
+        1320
+      ]
+    },
+    {
+      "id": "WakeRegion_3",
+      "coordinates": [
+        [
+          271599.10623298626,
+          6272067.13555945
+        ],
+        [
+          272919.10623298626,
+          6272067.13555945
+        ],
+        [
+          272919.10623298626,
+          6272507.13555945
+        ],
+        [
+          271599.10623298626,
+          6272507.13555945
+        ],
+        [
+          271599.10623298626,
+          6272067.13555945
+        ]
+      ],
+      "center": [
+        272259.10623298626,
+        6272287.13555945,
+        1320
+      ]
+    }
+  ],
+  "turbines": {
+    "turbine": [
+      {
+        "id": "Turbine_1",
+        "turbineType": "NREL6MW_17",
+        "coordinates": [
+          272436.640978077,
+          6271965.657857893
+        ],
+        "hubHeight": 102,
+        "rotorRadius": 77,
+        "tipSpeedRatio": 6.8,
+        "sphereRadius": 2
+      },
+      {
+        "id": "Turbine_2",
+        "turbineType": "NREL15MW_17",
+        "coordinates": [
+          272699.10623298626,
+          6272287.13555945
+        ],
+        "hubHeight": 120,
+        "rotorRadius": 110,
+        "tipSpeedRatio": 8.5,
+        "sphereRadius": 2
+      },
+      {
+        "id": "Turbine_3",
+        "turbineType": "NREL15MW_17",
+        "coordinates": [
+          272699.10623298626,
+          6272287.13555945
+        ],
+        "hubHeight": 120,
+        "rotorRadius": 110,
+        "tipSpeedRatio": 8.5,
+        "sphereRadius": 2
+      }
+    ],
+    "stallType": "dynamicStall",
+    "stallModel": "LeishmanBeddoes",
+    "endEffects": "shen",
+    "hubCheckbox": true,
+    "towerCheckbox": true
+  },
+  "environment": {
+    "wind": {
+      "direction": 3.141592653589793,
+      "speed": 8,
+      "turbulenceIntensity": 5.9,
+      "profileHeights": [
+        5,
+        15,
+        25,
+        35,
+        45,
+        55,
+        65,
+        75,
+        85,
+        95,
+        102,
+        105,
+        115,
+        125,
+        135,
+        145,
+        155,
+        165,
+        175,
+        185,
+        195,
+        250,
+        300,
+        350,
+        400,
+        450,
+        500,
+        1500
+      ]
+    },
+    "cellDensity": 0.25
+  },
+  "Solver": {
+    "startTime": 0,
+    "endTime": 500,
+    "deltaT": 0.05,
+    "writeInterval": 20,
+    "computeCores": 80
+  }
+}

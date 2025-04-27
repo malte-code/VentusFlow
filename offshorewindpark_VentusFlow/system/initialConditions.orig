@@ -1,0 +1,37 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2212                                  |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Initial conditions of the offshore wind park simulation
+// HLRS, 2022-2023
+
+WindSpeed       8.0;
+
+TurbIntensity   5.9;
+
+WindDirMeteo    320;
+
+sphereRadius    150;
+
+// Converts the wind speed and direction in standard meteorological terms to the cartesian system
+UInitial
+(
+   #eval{$WindSpeed * cos((270 - $WindDirMeteo) * degToRad())}
+   #eval{$WindSpeed * sin((270 - $WindDirMeteo) * degToRad())}
+   0
+);
+
+// Calculates the wind turbine axis to point oposite to the wind velocity vector
+axisInitial
+(
+   #eval{ -1 * cos((270 - $WindDirMeteo) * degToRad())}
+   #eval{ -1 * sin((270 - $WindDirMeteo) * degToRad())}
+   0
+);
+
+// ************************************************************************* //

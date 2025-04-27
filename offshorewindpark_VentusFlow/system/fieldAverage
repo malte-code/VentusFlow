@@ -1,0 +1,27 @@
+fieldAverage
+{
+    enabled         true;                          // Aktivierung der Funktion
+    type            fieldAverage;                  // Mittelwertbildung von Feldern über die Zeit
+    libs            ("libfieldFunctionObjects.so"); // Benötigte OpenFOAM-Bibliothek
+
+    writeControl    writeTime;                     // Ausgabe erfolgt synchron mit den Zeitschritten
+    restartOnRestart no;                           // Kein Reset der Mittelwerte bei Neustart
+    timeStart       60;                          // Beginn der Mittelwertberechnung ab t = 1000 s
+
+    fields
+    (
+        U
+        {
+            mean        on;                         // Berechnung des Mittelwerts von U (Geschwindigkeit)
+            prime2Mean  on;                         // Berechnung von u'u' (Reynolds-Spannungen)
+            base        time;                       // Zeitliche Mittelung
+        }
+
+        p
+        {
+            mean        on;                         // Berechnung des Mittelwerts von p (Druck)
+            prime2Mean  on;                         // Berechnung von p'p' (Druckschwankungen)
+            base        time;                       // Zeitliche Mittelung
+        }
+    );
+}
