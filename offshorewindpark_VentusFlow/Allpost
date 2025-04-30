@@ -5,9 +5,8 @@
 
 . $WM_PROJECT_DIR/bin/tools/RunFunctions
 
+rm -rf VTK 
 rm log.foamToVTK log.reconstructPar
-
-find . -maxdepth 1 -type d -regextype posix-extended -regex '\./[0-9]{1,5}' -exec rm -rf {} +
 
 runApplication reconstructPar
 runApplication foamToVTK

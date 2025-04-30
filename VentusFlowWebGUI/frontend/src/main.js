@@ -1213,10 +1213,15 @@ function initializeWebSocket() {
 
   // Nachrichten vom Server empfangen
   socket.onmessage = function (event) {
-    // Versuche zunächst, zu prüfen, ob es eine JSON-Nachricht ist
+    const outputElement = document.getElementById("output");
     try {
       const data = JSON.parse(event.data);
-      
+      if (data.type === "progress") {
+        if ("progress" in data) {
+          document.getElementById('progressBar').style.width = data.progress + '%';
+        }
+        return;
+      }
       // Prüfe, ob es sich um eine Passphrase-Anforderung handelt
       if (data.type === "passphrase_required") {
         console.log("Passphrase-Anfrage erkannt, zeige Popup an");

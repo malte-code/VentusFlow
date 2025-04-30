@@ -40,11 +40,17 @@ let sshPassphrase = null; // Speichert die Passphrase während der Server-Laufze
 // WebSocket-Verbindung herstellen
 wss.on("connection", (ws) => {
   console.log("Client verbunden.");
+  
+  // Start periodic polling every 10s for simulation progress
+  const progressInterval = setInterval(() => {
+    if (sshConfig && sshConfig.remoteDir) {
+      executeSSHCommand(ws, 'progress', null);
+    }
+  }, 10000);
 
   ws.on("message", (message) => {
     try {
       const data = JSON.parse(message);
-
       if (data.type === "export") {
         handleExportRequest(ws, data);
       } else if (data.type === "command") {
@@ -62,6 +68,7 @@ wss.on("connection", (ws) => {
 
   ws.on("close", () => {
     console.log("Client getrennt.");
+    clearInterval(progressInterval);
     // SSH-Verbindung bleibt bestehen, auch wenn Client getrennt wurde
   });
 });
@@ -347,6 +354,10 @@ function executeSSHCommand(ws, command, customCommand) {
       }
       break;
       
+    case 'progress':
+      sshCommand = `cd ${remoteDir} && ./utilCalcProgress`;
+      break;
+
     default:
       ws.send(`Unbekannter Befehl: ${command}`);
       return;
@@ -668,7 +679,10 @@ function createSSHConnection(ws, callback) {
  * Erstellt eine neue SSH-Verbindung und führt einen Befehl aus
  */
 function executeCommandWithNewConnection(ws, sshCommand, originalCommand) {
-  ws.send(`Führe Befehl aus: ${sshCommand}`);
+  // Only output non-progress system messages
+  if (originalCommand !== 'progress') {
+    ws.send(`Führe Befehl aus: ${sshCommand}`);
+  }
   
   // Pfad zum SSH-Schlüssel
   const homeDir = os.homedir();
@@ -683,29 +697,45 @@ function executeCommandWithNewConnection(ws, sshCommand, originalCommand) {
   }
   
   connectSSH(ws, sshPassphrase, keyFile, (conn) => {
-    ws.send("SSH-Verbindung für Befehl hergestellt. Führe Befehl aus...");
+    if (originalCommand !== 'progress') {
+      ws.send("SSH-Verbindung für Befehl hergestellt. Führe Befehl aus...");
+    }
     conn.exec(sshCommand, (err, stream) => {
       if (err) {
-        ws.send(`Fehler beim Ausführen des Befehls: ${err.message}`);
+        if (originalCommand !== 'progress') {
+          ws.send(`Fehler beim Ausführen des Befehls: ${err.message}`);
+        }
         conn.end();
         return;
       }
-      
+      let outputData = "";
       stream.on('data', (data) => {
-        ws.send(data.toString());
-      });
-      
-      stream.stderr.on('data', (data) => {
-        ws.send(`Fehler: ${data.toString()}`);
-      });
-      
-      stream.on('close', (code) => {
-        if (code === 0) {
-          ws.send(`Befehl '${originalCommand}' erfolgreich ausgeführt.`);
+        const text = data.toString();
+        outputData += text;
+        if (originalCommand === 'progress') {
+          const match = text.match(/Fortschritt der Simulation:\s*([\d.]+)\s*%/);
+          if (match) {
+            // Send only the filtered progress percentage in a JSON object.
+            ws.send(JSON.stringify({ type: "progress", progress: match[1] }));
+          }
         } else {
-          ws.send(`Befehl '${originalCommand}' mit Fehler beendet (Exit-Code: ${code}).`);
+          ws.send(text);
         }
-        conn.end(); // Verbindung beenden nach Ausführung des Befehls
+      });
+      stream.stderr.on('data', (data) => {
+        if (originalCommand !== 'progress') {
+          ws.send(`Fehler: ${data.toString()}`);
+        }
+      });
+      stream.on('close', (code) => {
+        if (originalCommand !== 'progress') {
+          if (code === 0) {
+            ws.send(`Befehl '${originalCommand}' erfolgreich ausgeführt.`);
+          } else {
+            ws.send(`Befehl '${originalCommand}' mit Fehler beendet (Exit-Code: ${code}).`);
+          }
+        }
+        conn.end();
       });
     });
   }, (err) => {

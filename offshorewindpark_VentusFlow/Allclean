@@ -6,7 +6,7 @@
 rm log.* slurm.* 
 
 # Lösche Ordner
-rm -rf VTK constant/polyMesh processor*
+rm -rf constant/polyMesh processor*
 
-find . -maxdepth 1 -type d -regextype posix-extended -regex '\./[0-9]{1,5}' -exec rm -rf {} +
+find . -maxdepth 1 -type d -regextype posix-extended -regex '\./[0-9]{1,9}' -exec rm -rf {} +
 

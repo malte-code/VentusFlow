@@ -886,9 +886,9 @@ def create_allclean_script():
         file.write("rm log.* slurm.* \n")
         file.write("\n")
         file.write("# Lösche Ordner\n")
-        file.write("rm -rf VTK constant/polyMesh processor*\n")    
+        file.write("rm -rf constant/polyMesh processor*\n")    
         file.write("\n")
-        file.write("find . -maxdepth 1 -type d -regextype posix-extended -regex '\\./[0-9]{1,5}' -exec rm -rf {} +\n")
+        file.write("find . -maxdepth 1 -type d -regextype posix-extended -regex '\\./[0-9]{1,9}' -exec rm -rf {} +\n")
         file.write("\n")
     # print(f"Allclean successfully created at: \n{allclean_path}")
 
@@ -1448,8 +1448,9 @@ def create_refine_files():
     refineRegionsnames = ["refineRegion1", "refineRegion2", "refineH3"]
     refineRegionIndex = ["refine1", "refine2", "refine3"]
     refine1height = math.ceil(meshParams['zMax'])
-    refine2height = math.ceil(meshParams['zMax'] / 2)
-    refine3height = max(t['hubHeight'] for t in turbines['turbines']) + (max(t['sphereRadius'] for t in turbines['turbines']) * max(t['rotorRadius'] for t in turbines['turbines']))
+    refine3height = max(t['hubHeight'] for t in turbines['turbines']) + (max(t['hubHeight'] for t in turbines['turbines']) * max(t['sphereRadius'] for t in turbines['turbines']))
+    refine2height = refine1height - ((refine3height - refine1height) / 2)
+   
     print("Refine heights:", refine1height, refine2height, refine3height)
     refineHeights = [refine1height, refine2height, refine3height]
 
@@ -1728,8 +1729,9 @@ def create_allpost_script():
 
         file.write(". $WM_PROJECT_DIR/bin/tools/RunFunctions\n\n")
 
+        file.write("rm -rf VTK \n")
+
         file.write("rm log.foamToVTK log.reconstructPar\n\n")
-        file.write(r"find . -maxdepth 1 -type d -regextype posix-extended -regex '\./[0-9]{1,5}' -exec rm -rf {} " + "+" + "\n\n")
 
         file.write("runApplication reconstructPar\n")
         file.write("runApplication foamToVTK\n")
