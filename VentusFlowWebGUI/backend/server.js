@@ -828,10 +828,22 @@ function connectSSH(ws, passphrase, keyFile, readyHandler, errorHandler, extraOp
     host: sshConfig.host,
     username: sshConfig.user,
     port: sshPort,
-    privateKey: keyFile,
-    passphrase: passphrase,
     readyTimeout: 30000
   };
+
+  // SSH-Agent verwenden, wenn verfügbar
+  if (checkSSHAgent()) {
+    config.agent = process.env.SSH_AUTH_SOCK;
+    config.agentForward = true;
+    ws.send("SSH-Agent wird für Authentifizierung verwendet.");
+  } else {
+    // Fallback auf privaten Schlüssel und Passphrase
+    config.privateKey = keyFile;
+    if (passphrase) {
+      config.passphrase = passphrase;
+    }
+  }
+
   if (extraOptions) Object.assign(config, extraOptions);
 
   const conn = new Client();

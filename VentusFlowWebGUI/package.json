@@ -6,7 +6,7 @@
     "start": "concurrently \"node backend/server.js\" \"vite --open\"",
     "dev": "vite",
     "build": "vite build",
-    "serve": "concurrently \"node backend/server.js\" \"vite preview --open\""
+    "serve": "ssh-agent sh -c 'ssh-add ~/.ssh/id_ed25519 || true; concurrently \"node backend/server.js\" \"vite preview --open\"'"
   },
   "dependencies": {
     "cors": "^2.8.5",

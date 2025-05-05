@@ -27,7 +27,7 @@ Turbine_1
         fieldNames          (U);
         selectionMode       cellSet;
         cellSet             WakeRegion_1;
-        origin              (1081.8204766544513 3.4764509862288833 102);
+        origin              (30046.872866412625 60056.62877509883 102);
         axis                $axisInitial;
         verticalDirection   (0 0 1);
         freeStreamVelocity  $UInitial;
