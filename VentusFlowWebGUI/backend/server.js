@@ -44,7 +44,7 @@ wss.on("connection", (ws) => {
   // Start periodic polling every 10s for simulation progress
   const progressInterval = setInterval(() => {
     if (sshConfig && sshConfig.remoteDir) {
-      executeSSHCommand(ws, 'progress', null);
+      executeSSHCommand(ws, 'progress', null, { suppressConnectionMessages: true });
     }
   }, 10000);
 
@@ -277,7 +277,7 @@ function ensureSSHConnection(ws, callback) {
 /**
  * Führt einen SSH-Befehl auf dem Remote-Server aus
  */
-function executeSSHCommand(ws, command, customCommand) {
+function executeSSHCommand(ws, command, customCommand, options = {}) {
   if (!sshConfig || !sshConfig.user || !sshConfig.host) {
     ws.send("SSH-Konfiguration fehlt. Bitte zuerst einen Export durchführen.");
     return;
@@ -364,7 +364,7 @@ function executeSSHCommand(ws, command, customCommand) {
   }
   
   // Neue SSH-Verbindung für den Befehl erstellen
-  executeCommandWithNewConnection(ws, sshCommand, command);
+  executeCommandWithNewConnection(ws, sshCommand, command, options);
 }
 
 /**
@@ -678,9 +678,8 @@ function createSSHConnection(ws, callback) {
 /**
  * Erstellt eine neue SSH-Verbindung und führt einen Befehl aus
  */
-function executeCommandWithNewConnection(ws, sshCommand, originalCommand) {
-  // Only output non-progress system messages
-  if (originalCommand !== 'progress') {
+function executeCommandWithNewConnection(ws, sshCommand, originalCommand, options = {}) {
+  if (!options.suppressConnectionMessages && originalCommand !== 'progress') {
     ws.send(`Führe Befehl aus: ${sshCommand}`);
   }
   
@@ -697,12 +696,12 @@ function executeCommandWithNewConnection(ws, sshCommand, originalCommand) {
   }
   
   connectSSH(ws, sshPassphrase, keyFile, (conn) => {
-    if (originalCommand !== 'progress') {
+    if (!options.suppressConnectionMessages && originalCommand !== 'progress') {
       ws.send("SSH-Verbindung für Befehl hergestellt. Führe Befehl aus...");
     }
     conn.exec(sshCommand, (err, stream) => {
       if (err) {
-        if (originalCommand !== 'progress') {
+        if (!options.suppressConnectionMessages && originalCommand !== 'progress') {
           ws.send(`Fehler beim Ausführen des Befehls: ${err.message}`);
         }
         conn.end();
@@ -723,12 +722,12 @@ function executeCommandWithNewConnection(ws, sshCommand, originalCommand) {
         }
       });
       stream.stderr.on('data', (data) => {
-        if (originalCommand !== 'progress') {
+        if (!options.suppressConnectionMessages && originalCommand !== 'progress') {
           ws.send(`Fehler: ${data.toString()}`);
         }
       });
       stream.on('close', (code) => {
-        if (originalCommand !== 'progress') {
+        if (!options.suppressConnectionMessages && originalCommand !== 'progress') {
           if (code === 0) {
             ws.send(`Befehl '${originalCommand}' erfolgreich ausgeführt.`);
           } else {
@@ -856,20 +855,11 @@ function connectSSH(ws, passphrase, keyFile, readyHandler, errorHandler, extraOp
     if (errorHandler) errorHandler(err);
   });
 
-  // conn.on('end', () => {
-  //   ws.send("SSH-Verbindung wurde beendet.");
-  // });
-
-  conn.on('close', (hadError) => {
-    ws.send(`SSH-Verbindung wurde geschlossen. ${hadError ? 'Es gab einen Fehler.' : ''}`);
-  });
-
   conn.on('ready', () => {
     readyHandler(conn);
   });
 
   try {
-    ws.send(`Versuche SSH-Verbindung mit Key und Passphrase über Port ${sshPort}...`);
     conn.connect(config);
   } catch (e) {
     console.error('SSH-Connection Fehler:', e);

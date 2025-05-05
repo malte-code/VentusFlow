@@ -1448,8 +1448,8 @@ def create_refine_files():
     refineRegionsnames = ["refineRegion1", "refineRegion2", "refineH3"]
     refineRegionIndex = ["refine1", "refine2", "refine3"]
     refine1height = math.ceil(meshParams['zMax'])
-    refine3height = max(t['hubHeight'] for t in turbines['turbines']) + (max(t['hubHeight'] for t in turbines['turbines']) * max(t['sphereRadius'] for t in turbines['turbines']))
-    refine2height = refine1height - ((refine3height - refine1height) / 2)
+    refine3height = max(t['hubHeight'] for t in turbines['turbines']) + ( 2 * max(t['rotorRadius'] for t in turbines['turbines']))
+    refine2height = refine1height + ((refine3height - refine1height) / 2)
    
     print("Refine heights:", refine1height, refine2height, refine3height)
     refineHeights = [refine1height, refine2height, refine3height]
@@ -1552,7 +1552,7 @@ def create_topoSetDict_wakeregions():
     simulationArea = SimulationArea.getSimulationArea()
     turbine_data = WindTurbines.getTurbines()
 
-    refine3height = max(t['hubHeight'] for t in turbine_data['turbines']) + (max(t['hubHeight'] for t in turbine_data['turbines']) * max(t['sphereRadius'] for t in turbine_data['turbines']))
+    refine3height = max(t['hubHeight'] for t in turbine_data['turbines']) + ( 1.5 * max(t['rotorRadius'] for t in turbine_data['turbines']))
 
 
     with open(topoSetDictwakeregions_path, 'w') as file:
