@@ -26,14 +26,14 @@ startTime       0;                       // Startzeit der Simulation
 
 // Stoppkriterium für die Simulation
 stopAt          endTime;                 // Simulation läuft bis `endTime`
-endTime         500;                     // Endzeitpunkt der Simulation (physikalische Zeit in Sekunden)
+endTime         1000;                     // Endzeitpunkt der Simulation (physikalische Zeit in Sekunden)
 
 // Zeitschrittgröße
-deltaT          0.05;                    // Zeitschrittweite Δt = 0.5s (LES erfordert kleine Zeitschritte)
+deltaT          0.1;                    // Zeitschrittweite Δt = 0.5s (LES erfordert kleine Zeitschritte)
 
 // Steuerung der Datenausgabe
 writeControl    adjustableRunTime;       // Ausgabe basierend auf dynamischer Simulationszeit
-writeInterval   20;                    // Ausgabeintervall für Ergebnisse (wenn, = endtime, dann keine speicherung der Ergebnisse des gesamten Gebietes)
+writeInterval   100;                    // Ausgabeintervall für Ergebnisse (wenn, = endtime, dann keine speicherung der Ergebnisse des gesamten Gebietes)
 
 // Speicherverwaltung für Ausgabe
 purgeWrite      0;                        // Keine alten Ausgabedateien löschen
