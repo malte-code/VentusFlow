@@ -46,7 +46,7 @@ wss.on("connection", (ws) => {
     if (sshConfig && sshConfig.remoteDir) {
       executeSSHCommand(ws, 'progress', null, { suppressConnectionMessages: true });
     }
-  }, 10000);
+  }, 100000);
 
   ws.on("message", (message) => {
     try {

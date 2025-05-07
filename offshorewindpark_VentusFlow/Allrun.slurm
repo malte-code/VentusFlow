@@ -7,7 +7,7 @@
 #SBATCH --job-name=openfoamsimoffshore          ### Job Name
 #SBATCH --time=512:00:00                        ### WallTime
 #SBATCH --mem-per-cpu 2G
-#SBATCH --ntasks 80
+#SBATCH --ntasks 120
 #SBATCH --ntasks-per-core 2
 #SBATCH --ntasks-per-node 15
 #SBATCH --cpus-per-task 1
@@ -19,4 +19,4 @@ source /home/hpcschud/.bashrc
 
 cd $SLURM_SUBMIT_DIR
 
-mpirun -np 80 -- pimpleFoam -parallel > log.slurm_pimpleFoam 2>&1
+mpirun -np 120 -- pimpleFoam -parallel > log.slurm_pimpleFoam 2>&1
