@@ -835,7 +835,7 @@ function connectSSH(ws, passphrase, keyFile, readyHandler, errorHandler, extraOp
   if (checkSSHAgent()) {
     config.agent = process.env.SSH_AUTH_SOCK;
     config.agentForward = true;
-    ws.send("SSH-Agent wird für Authentifizierung verwendet.");
+    //ws.send("SSH-Agent wird für Authentifizierung verwendet.");
   } else {
     // Fallback auf privaten Schlüssel und Passphrase
     config.privateKey = keyFile;

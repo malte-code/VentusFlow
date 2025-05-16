@@ -27,7 +27,7 @@ Turbine_1
         fieldNames          (U);
         selectionMode       cellSet;
         cellSet             WakeRegion_1;
-        origin              (743.132911822293 5.920278483070433 102);
+        origin              (872.251173422439 5.832182525657117 102);
         axis                $axisInitial;
         verticalDirection   (0 0 1);
         freeStreamVelocity  $UInitial;
@@ -184,14 +184,14 @@ Turbine_2
     {
         fieldNames          (U);
         selectionMode       cellSet;
-        cellSet             WakeRegion_2;
-        origin              (-185.6167054087855 5.920278483070433 102);
+        cellSet             WakeRegion_1;
+        origin              (104.8451817673631 -3.725290298461914e-09 120);
         axis                $axisInitial;
         verticalDirection   (0 0 1);
         freeStreamVelocity  $UInitial;
-        tipSpeedRatio       6.8;
+        tipSpeedRatio       8.5;
         inductionFactor     0.25;
-        rotorRadius         77;
+        rotorRadius         110;
 
         dynamicStall
         {
@@ -226,11 +226,11 @@ Turbine_2
                 nElements           17;
                 elementProfiles
                 (
-                    #include "NREL6MW_Blade/NREL6MW_17_elementProfiles"
+                    #include "NREL15MW_Blade/NREL15MW_17_elementProfiles"
                 );
                 elementData
                 (
-                    #include "NREL6MW_Blade/NREL6MW_17_elementData"
+                    #include "NREL15MW_Blade/NREL15MW_17_elementData"
                 );
                 collectivePitch     0.0;
             }
@@ -255,7 +255,7 @@ Turbine_2
             elementProfiles     (cylinder);
             elementData
             (// axial distance (turbine axis), height, diameter
-                (10.0 -102 4.50)
+                (10.0 -120 4.50)
                 (10.0   0.0 3.50)
             );
         }
@@ -265,7 +265,7 @@ Turbine_2
             elementProfiles     (cylinder);
             elementData
             (
-            #include "NREL6MW_Blade/NREL6MW_hub_elementData"
+            #include "NREL15MW_Blade/NREL15MW_hub_elementData"
             );
         }
         profileData
@@ -275,7 +275,7 @@ Turbine_2
                 tableType   singleRe;
                 data
                 (
-                #include "NREL6MW_Blade/NREL6MW_foil/DU40_A17"
+                #include "NREL15MW_Blade/NREL15MW_foil/DU40_A17"
                 );
             }
             DU99W350LM
@@ -283,7 +283,7 @@ Turbine_2
                 tableType   singleRe;
                 data
                 (
-                #include "NREL6MW_Blade/NREL6MW_foil/DU35_A17"
+                #include "NREL15MW_Blade/NREL15MW_foil/DU35_A17"
                 );
             }
             DU97W300LM
@@ -291,7 +291,7 @@ Turbine_2
                 tableType   singleRe;
                 data
                 (
-                #include "NREL6MW_Blade/NREL6MW_foil/DU30_A17"
+                #include "NREL15MW_Blade/NREL15MW_foil/DU30_A17"
                 );
             }
             DU91W2250LM
@@ -299,7 +299,7 @@ Turbine_2
                 tableType   singleRe;
                 data
                 (
-                #include "NREL6MW_Blade/NREL6MW_foil/DU25_A17"
+                #include "NREL15MW_Blade/NREL15MW_foil/DU25_A17"
                 );
             }
             DU93W210LM
@@ -307,7 +307,7 @@ Turbine_2
                 tableType   singleRe;
                 data
                 (
-                #include "NREL6MW_Blade/NREL6MW_foil/DU21_A17"
+                #include "NREL15MW_Blade/NREL15MW_foil/DU21_A17"
                 );
             }
             NACA64618
@@ -315,7 +315,7 @@ Turbine_2
                 tableType   singleRe;
                 data
                 (
-                #include "NREL6MW_Blade/NREL6MW_foil/NACA64_A17"
+                #include "NREL15MW_Blade/NREL15MW_foil/NACA64_A17"
                 );
             }
             circular050
