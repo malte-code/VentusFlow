@@ -33,7 +33,7 @@ deltaT          0.05;                    // Zeitschrittweite Δt = 0.5s (LES erf
 
 // Steuerung der Datenausgabe
 writeControl    adjustableRunTime;       // Ausgabe basierend auf dynamischer Simulationszeit
-writeInterval   10;                    // Ausgabeintervall für Ergebnisse (wenn, = endtime, dann keine speicherung der Ergebnisse des gesamten Gebietes)
+writeInterval   20;                    // Ausgabeintervall für Ergebnisse (wenn, = endtime, dann keine speicherung der Ergebnisse des gesamten Gebietes)
 
 // Speicherverwaltung für Ausgabe
 purgeWrite      0;                        // Keine alten Ausgabedateien löschen

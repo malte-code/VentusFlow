@@ -1,6 +1,14 @@
-# Author: Malte Schudek
-# Repository: https://github.com/malte-code/VentusFlow
-# File: frontend/readme.md
+# VentusFlow WebGUI – Offshore Windpark Simulation (LES, Actuator Line)
+
+**Autor:** Malte Schudek  
+**Hochschule:** Universität Stuttgart, HLRS  
+**Betreuer:** Prof. Dr.-Ing. Dr. h.c. Hon. Prof. Michael M. Resch, Uwe Woessner, Dr.-Ing.  
+
+**Studienarbeit Energietechnik** | April 2025 | Bericht Nr. 001  
+**Repository:** [github.com/malte-code/VentusFlow](https://github.com/malte-code/VentusFlow)  
+**Datei:** `frontend/README.md`
+---
+
 
 # README: frontend/index.html
 

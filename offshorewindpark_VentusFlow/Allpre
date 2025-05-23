@@ -6,7 +6,7 @@
 . $WM_PROJECT_DIR/bin/tools/RunFunctions
 
 loopRefineMesh () {
-    for SET in WakeRegion_1 ; do
+    for SET in WakeRegion_1 WakeRegion_2 ; do
         sed -i "0,/set [a-zA-Z0-9_]*/s//set ${SET}/" system/refineMeshDict.wakeregions 
         runApplication -s wake_${SET} refineMesh -overwrite -dict system/refineMeshDict.wakeregions
     done
@@ -25,7 +25,7 @@ runApplication -s wakeregions topoSet -dict system/topoSetDict.wakeregions
 loopRefineMesh
 
 
-runApplication -s iter1 transformPoints -rollPitchYaw '(0 0 0.0)'
+runApplication -s iter1 transformPoints -rollPitchYaw '(0 0 121.0)'
 
 runApplication checkMesh
 runApplication foamToVTK

@@ -27,7 +27,7 @@ Turbine_1
         fieldNames          (U);
         selectionMode       cellSet;
         cellSet             WakeRegion_1;
-        origin              (872.251173422439 5.832182525657117 102);
+        origin              (578.3996434396249 698.2833344824612 90);
         axis                $axisInitial;
         verticalDirection   (0 0 1);
         freeStreamVelocity  $UInitial;
@@ -97,7 +97,7 @@ Turbine_1
             elementProfiles     (cylinder);
             elementData
             (// axial distance (turbine axis), height, diameter
-                (10.0 -102 4.50)
+                (10.0 -90 4.50)
                 (10.0   0.0 3.50)
             );
         }
@@ -185,7 +185,323 @@ Turbine_2
         fieldNames          (U);
         selectionMode       cellSet;
         cellSet             WakeRegion_1;
-        origin              (104.8451817673631 -3.725290298461914e-09 120);
+        origin              (497.3902652247343 260.3768365876749 100);
+        axis                $axisInitial;
+        verticalDirection   (0 0 1);
+        freeStreamVelocity  $UInitial;
+        tipSpeedRatio       6.8;
+        inductionFactor     0.25;
+        rotorRadius         77;
+
+        dynamicStall
+        {
+            active          off;
+            dynamicStallModel LeishmanBeddoes;
+        }
+
+        endEffects
+        {
+            active          on;
+            endEffectsModel shen;
+            GlauertCoeffs
+            {
+                tipEffects  on;
+                rootEffects on;
+            }
+            ShenCoeffs
+            {
+                tipEffects  on;
+                rootEffects on;
+                c1          0.125;
+                c2          21;
+            }
+        }
+
+        blades
+        {
+            blade1
+            {
+                writePerf           true;
+                writeElementPerf    true;
+                nElements           17;
+                elementProfiles
+                (
+                    #include "NREL6MW_Blade/NREL6MW_17_elementProfiles"
+                );
+                elementData
+                (
+                    #include "NREL6MW_Blade/NREL6MW_17_elementData"
+                );
+                collectivePitch     0.0;
+            }
+            blade2
+            {
+                $blade1;
+                writePerf           false;
+                writeElementPerf    false;
+                azimuthalOffset     120.0;
+            }
+            blade3
+            {
+                $blade2;
+                azimuthalOffset     240.0;
+            }
+        }
+    
+        tower
+        {
+            includeInTotalDrag  false;
+            nElements           2;
+            elementProfiles     (cylinder);
+            elementData
+            (// axial distance (turbine axis), height, diameter
+                (10.0 -100 4.50)
+                (10.0   0.0 3.50)
+            );
+        }
+        hub
+        {
+            nElements           2;
+            elementProfiles     (cylinder);
+            elementData
+            (
+            #include "NREL6MW_Blade/NREL6MW_hub_elementData"
+            );
+        }
+        profileData
+        {
+            DU99W405LM
+            {
+                tableType   singleRe;
+                data
+                (
+                #include "NREL6MW_Blade/NREL6MW_foil/DU40_A17"
+                );
+            }
+            DU99W350LM
+            {
+                tableType   singleRe;
+                data
+                (
+                #include "NREL6MW_Blade/NREL6MW_foil/DU35_A17"
+                );
+            }
+            DU97W300LM
+            {
+                tableType   singleRe;
+                data
+                (
+                #include "NREL6MW_Blade/NREL6MW_foil/DU30_A17"
+                );
+            }
+            DU91W2250LM
+            {
+                tableType   singleRe;
+                data
+                (
+                #include "NREL6MW_Blade/NREL6MW_foil/DU25_A17"
+                );
+            }
+            DU93W210LM
+            {
+                tableType   singleRe;
+                data
+                (
+                #include "NREL6MW_Blade/NREL6MW_foil/DU21_A17"
+                );
+            }
+            NACA64618
+            {
+                tableType   singleRe;
+                data
+                (
+                #include "NREL6MW_Blade/NREL6MW_foil/NACA64_A17"
+                );
+            }
+            circular050
+            {
+                data ((-180 0 0.50)(180 0 0.50));
+            }
+            circular035
+            {
+                data ((-180 0 0.35)(180 0 0.35));
+            }
+            cylinder
+            {
+                data ((-180 0 0.0)(180 0 0.0));
+            }
+        }
+    }
+}
+Turbine_3
+{
+    type            axialFlowTurbineALSource;
+    active          on;
+
+    axialFlowTurbineALSourceCoeffs
+    {
+        fieldNames          (U);
+        selectionMode       cellSet;
+        cellSet             WakeRegion_1;
+        origin              (473.70501449974836 -177.52966130897403 110);
+        axis                $axisInitial;
+        verticalDirection   (0 0 1);
+        freeStreamVelocity  $UInitial;
+        tipSpeedRatio       6.8;
+        inductionFactor     0.25;
+        rotorRadius         77;
+
+        dynamicStall
+        {
+            active          off;
+            dynamicStallModel LeishmanBeddoes;
+        }
+
+        endEffects
+        {
+            active          on;
+            endEffectsModel shen;
+            GlauertCoeffs
+            {
+                tipEffects  on;
+                rootEffects on;
+            }
+            ShenCoeffs
+            {
+                tipEffects  on;
+                rootEffects on;
+                c1          0.125;
+                c2          21;
+            }
+        }
+
+        blades
+        {
+            blade1
+            {
+                writePerf           true;
+                writeElementPerf    true;
+                nElements           17;
+                elementProfiles
+                (
+                    #include "NREL6MW_Blade/NREL6MW_17_elementProfiles"
+                );
+                elementData
+                (
+                    #include "NREL6MW_Blade/NREL6MW_17_elementData"
+                );
+                collectivePitch     0.0;
+            }
+            blade2
+            {
+                $blade1;
+                writePerf           false;
+                writeElementPerf    false;
+                azimuthalOffset     120.0;
+            }
+            blade3
+            {
+                $blade2;
+                azimuthalOffset     240.0;
+            }
+        }
+    
+        tower
+        {
+            includeInTotalDrag  false;
+            nElements           2;
+            elementProfiles     (cylinder);
+            elementData
+            (// axial distance (turbine axis), height, diameter
+                (10.0 -110 4.50)
+                (10.0   0.0 3.50)
+            );
+        }
+        hub
+        {
+            nElements           2;
+            elementProfiles     (cylinder);
+            elementData
+            (
+            #include "NREL6MW_Blade/NREL6MW_hub_elementData"
+            );
+        }
+        profileData
+        {
+            DU99W405LM
+            {
+                tableType   singleRe;
+                data
+                (
+                #include "NREL6MW_Blade/NREL6MW_foil/DU40_A17"
+                );
+            }
+            DU99W350LM
+            {
+                tableType   singleRe;
+                data
+                (
+                #include "NREL6MW_Blade/NREL6MW_foil/DU35_A17"
+                );
+            }
+            DU97W300LM
+            {
+                tableType   singleRe;
+                data
+                (
+                #include "NREL6MW_Blade/NREL6MW_foil/DU30_A17"
+                );
+            }
+            DU91W2250LM
+            {
+                tableType   singleRe;
+                data
+                (
+                #include "NREL6MW_Blade/NREL6MW_foil/DU25_A17"
+                );
+            }
+            DU93W210LM
+            {
+                tableType   singleRe;
+                data
+                (
+                #include "NREL6MW_Blade/NREL6MW_foil/DU21_A17"
+                );
+            }
+            NACA64618
+            {
+                tableType   singleRe;
+                data
+                (
+                #include "NREL6MW_Blade/NREL6MW_foil/NACA64_A17"
+                );
+            }
+            circular050
+            {
+                data ((-180 0 0.50)(180 0 0.50));
+            }
+            circular035
+            {
+                data ((-180 0 0.35)(180 0 0.35));
+            }
+            cylinder
+            {
+                data ((-180 0 0.0)(180 0 0.0));
+            }
+        }
+    }
+}
+Turbine_4
+{
+    type            axialFlowTurbineALSource;
+    active          on;
+
+    axialFlowTurbineALSourceCoeffs
+    {
+        fieldNames          (U);
+        selectionMode       cellSet;
+        cellSet             WakeRegion_1;
+        origin              (-485.547639861441 698.2833344838582 140);
         axis                $axisInitial;
         verticalDirection   (0 0 1);
         freeStreamVelocity  $UInitial;
@@ -255,7 +571,323 @@ Turbine_2
             elementProfiles     (cylinder);
             elementData
             (// axial distance (turbine axis), height, diameter
-                (10.0 -120 4.50)
+                (10.0 -140 4.50)
+                (10.0   0.0 3.50)
+            );
+        }
+        hub
+        {
+            nElements           2;
+            elementProfiles     (cylinder);
+            elementData
+            (
+            #include "NREL15MW_Blade/NREL15MW_hub_elementData"
+            );
+        }
+        profileData
+        {
+            DU99W405LM
+            {
+                tableType   singleRe;
+                data
+                (
+                #include "NREL15MW_Blade/NREL15MW_foil/DU40_A17"
+                );
+            }
+            DU99W350LM
+            {
+                tableType   singleRe;
+                data
+                (
+                #include "NREL15MW_Blade/NREL15MW_foil/DU35_A17"
+                );
+            }
+            DU97W300LM
+            {
+                tableType   singleRe;
+                data
+                (
+                #include "NREL15MW_Blade/NREL15MW_foil/DU30_A17"
+                );
+            }
+            DU91W2250LM
+            {
+                tableType   singleRe;
+                data
+                (
+                #include "NREL15MW_Blade/NREL15MW_foil/DU25_A17"
+                );
+            }
+            DU93W210LM
+            {
+                tableType   singleRe;
+                data
+                (
+                #include "NREL15MW_Blade/NREL15MW_foil/DU21_A17"
+                );
+            }
+            NACA64618
+            {
+                tableType   singleRe;
+                data
+                (
+                #include "NREL15MW_Blade/NREL15MW_foil/NACA64_A17"
+                );
+            }
+            circular050
+            {
+                data ((-180 0 0.50)(180 0 0.50));
+            }
+            circular035
+            {
+                data ((-180 0 0.35)(180 0 0.35));
+            }
+            cylinder
+            {
+                data ((-180 0 0.0)(180 0 0.0));
+            }
+        }
+    }
+}
+Turbine_5
+{
+    type            axialFlowTurbineALSource;
+    active          on;
+
+    axialFlowTurbineALSourceCoeffs
+    {
+        fieldNames          (U);
+        selectionMode       cellSet;
+        cellSet             WakeRegion_2;
+        origin              (-698.7148963861691 130.18841829383746 150);
+        axis                $axisInitial;
+        verticalDirection   (0 0 1);
+        freeStreamVelocity  $UInitial;
+        tipSpeedRatio       8.5;
+        inductionFactor     0.25;
+        rotorRadius         110;
+
+        dynamicStall
+        {
+            active          off;
+            dynamicStallModel LeishmanBeddoes;
+        }
+
+        endEffects
+        {
+            active          on;
+            endEffectsModel shen;
+            GlauertCoeffs
+            {
+                tipEffects  on;
+                rootEffects on;
+            }
+            ShenCoeffs
+            {
+                tipEffects  on;
+                rootEffects on;
+                c1          0.125;
+                c2          21;
+            }
+        }
+
+        blades
+        {
+            blade1
+            {
+                writePerf           true;
+                writeElementPerf    true;
+                nElements           17;
+                elementProfiles
+                (
+                    #include "NREL15MW_Blade/NREL15MW_17_elementProfiles"
+                );
+                elementData
+                (
+                    #include "NREL15MW_Blade/NREL15MW_17_elementData"
+                );
+                collectivePitch     0.0;
+            }
+            blade2
+            {
+                $blade1;
+                writePerf           false;
+                writeElementPerf    false;
+                azimuthalOffset     120.0;
+            }
+            blade3
+            {
+                $blade2;
+                azimuthalOffset     240.0;
+            }
+        }
+    
+        tower
+        {
+            includeInTotalDrag  false;
+            nElements           2;
+            elementProfiles     (cylinder);
+            elementData
+            (// axial distance (turbine axis), height, diameter
+                (10.0 -150 4.50)
+                (10.0   0.0 3.50)
+            );
+        }
+        hub
+        {
+            nElements           2;
+            elementProfiles     (cylinder);
+            elementData
+            (
+            #include "NREL15MW_Blade/NREL15MW_hub_elementData"
+            );
+        }
+        profileData
+        {
+            DU99W405LM
+            {
+                tableType   singleRe;
+                data
+                (
+                #include "NREL15MW_Blade/NREL15MW_foil/DU40_A17"
+                );
+            }
+            DU99W350LM
+            {
+                tableType   singleRe;
+                data
+                (
+                #include "NREL15MW_Blade/NREL15MW_foil/DU35_A17"
+                );
+            }
+            DU97W300LM
+            {
+                tableType   singleRe;
+                data
+                (
+                #include "NREL15MW_Blade/NREL15MW_foil/DU30_A17"
+                );
+            }
+            DU91W2250LM
+            {
+                tableType   singleRe;
+                data
+                (
+                #include "NREL15MW_Blade/NREL15MW_foil/DU25_A17"
+                );
+            }
+            DU93W210LM
+            {
+                tableType   singleRe;
+                data
+                (
+                #include "NREL15MW_Blade/NREL15MW_foil/DU21_A17"
+                );
+            }
+            NACA64618
+            {
+                tableType   singleRe;
+                data
+                (
+                #include "NREL15MW_Blade/NREL15MW_foil/NACA64_A17"
+                );
+            }
+            circular050
+            {
+                data ((-180 0 0.50)(180 0 0.50));
+            }
+            circular035
+            {
+                data ((-180 0 0.35)(180 0 0.35));
+            }
+            cylinder
+            {
+                data ((-180 0 0.0)(180 0 0.0));
+            }
+        }
+    }
+}
+Turbine_6
+{
+    type            axialFlowTurbineALSource;
+    active          on;
+
+    axialFlowTurbineALSourceCoeffs
+    {
+        fieldNames          (U);
+        selectionMode       cellSet;
+        cellSet             WakeRegion_2;
+        origin              (-615.8165188487619 -437.9064978957176 160);
+        axis                $axisInitial;
+        verticalDirection   (0 0 1);
+        freeStreamVelocity  $UInitial;
+        tipSpeedRatio       8.5;
+        inductionFactor     0.25;
+        rotorRadius         110;
+
+        dynamicStall
+        {
+            active          off;
+            dynamicStallModel LeishmanBeddoes;
+        }
+
+        endEffects
+        {
+            active          on;
+            endEffectsModel shen;
+            GlauertCoeffs
+            {
+                tipEffects  on;
+                rootEffects on;
+            }
+            ShenCoeffs
+            {
+                tipEffects  on;
+                rootEffects on;
+                c1          0.125;
+                c2          21;
+            }
+        }
+
+        blades
+        {
+            blade1
+            {
+                writePerf           true;
+                writeElementPerf    true;
+                nElements           17;
+                elementProfiles
+                (
+                    #include "NREL15MW_Blade/NREL15MW_17_elementProfiles"
+                );
+                elementData
+                (
+                    #include "NREL15MW_Blade/NREL15MW_17_elementData"
+                );
+                collectivePitch     0.0;
+            }
+            blade2
+            {
+                $blade1;
+                writePerf           false;
+                writeElementPerf    false;
+                azimuthalOffset     120.0;
+            }
+            blade3
+            {
+                $blade2;
+                azimuthalOffset     240.0;
+            }
+        }
+    
+        tower
+        {
+            includeInTotalDrag  false;
+            nElements           2;
+            elementProfiles     (cylinder);
+            elementData
+            (// axial distance (turbine axis), height, diameter
+                (10.0 -160 4.50)
                 (10.0   0.0 3.50)
             );
         }

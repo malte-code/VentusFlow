@@ -28,7 +28,7 @@ sets
         planeType   pointAndNormal;
         pointAndNormalDict
         {
-            basePoint   (0 0 102);
+            basePoint   (0 0 90);
             normalVector (0 0 1);
         }
         interpolate true;

@@ -30,6 +30,10 @@ writeForceAllTurbines
         Foam::word fields[] = {
             "force.Turbine_1",
             "force.Turbine_2",
+            "force.Turbine_3",
+            "force.Turbine_4",
+            "force.Turbine_5",
+            "force.Turbine_6",
         };
 
         Info << "Reading forces ";

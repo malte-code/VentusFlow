@@ -1,8 +1,15 @@
-/*
-Author: Malte Schudek
-Repository: https://github.com/malte-code/VentusFlow
-File: frontend/src/main.js
-*/
+/**
+ * VentusFlow WebGUI – Offshore Windpark Simulation (LES, Actuator Line)
+ * ---------------------------------------------------------------
+ * Author: Malte Schudek
+ * Hochschule: Universität Stuttgart, HLRS
+ * Betreuer: Prof. Dr.-Ing. Dr. h.c. Hon. Prof. Michael M. Resch, Uwe Woessner, Dr.-Ing.
+ * 
+ * Studienarbeit Energietechnik | April 2025 | Bericht Nr. 001
+ * 
+ * Repository: https://github.com/malte-code/VentusFlow
+ * File: frontend/src/main.js
+ */
 
 // ======================================================================
 // Global Styles
@@ -451,9 +458,25 @@ document.getElementById('turbineTypeDropdown').addEventListener('change', () => 
     });
     // Optional: ersten Wert als Standard setzen
     hubHeightDropdown.value = specs.hubHeights[0];
+    // <span id="hubHeight"> entfällt, keine Synchronisierung mehr nötig
   }
 });
 
+// Initialisiere Hubhöhen-Dropdown beim Laden
+function initialisiereHubHeightDropdown() {
+  const turbineType = document.getElementById('turbineTypeDropdown').value;
+  const specs = turbineSpecs[turbineType];
+  const hubHeightDropdown = document.getElementById('hubHeightDropdown');
+  hubHeightDropdown.innerHTML = '';
+  specs.hubHeights.forEach(hh => {
+    const option = document.createElement('option');
+    option.value = hh;
+    option.textContent = hh;
+    hubHeightDropdown.appendChild(option);
+  });
+  hubHeightDropdown.value = specs.hubHeights[0];
+}
+initialisiereHubHeightDropdown();
 
 // Wake-Regionen
 document.getElementById('wakeDepth').addEventListener('change', () => {
@@ -463,7 +486,6 @@ document.getElementById('wakeDepth').addEventListener('change', () => {
 document.getElementById('sphereRadius').addEventListener('change', () => {
   updateWakeLayer(); // Aktualisiert die Wake-Regionen
 });
-
 
 // ======================================================================
 // Formen-Zeichnen und -Bearbeiten im drawlayer
@@ -559,7 +581,7 @@ function hinzufuegenZeichenInteraktion(formTyp) {
       // Read turbine panel parameter values
       const turbineParams = {
         turbineType: document.getElementById('turbineTypeDropdown').value,
-        hubHeight: parseFloat(document.getElementById('hubHeight').value),
+        hubHeight: parseFloat(document.getElementById('hubHeightDropdown').value),
         rotorRadius: parseFloat(document.getElementById('rotorRadius').textContent),
         tipSpeedRatio: parseFloat(document.getElementById('tipSpeedRatio').textContent),
         sphereRadius: parseFloat(document.getElementById('sphereRadius').value)
@@ -733,7 +755,7 @@ function ermittleDimensionen(geometry, windAngle) {
     const x = coord[0], y = coord[1];
     // Projektion entlang der Windrichtung (parallel)
     const projParallel = x * cosA + y * sinA;
-    // Projektion orthogonal (Breite)
+    // Projektion orthogonal (Breite) – wird skaliert
     const projOrthogonal = -x * sinA + y * cosA;
     if (projParallel < minParallel) minParallel = projParallel;
     if (projParallel > maxParallel) maxParallel = projParallel;
@@ -1429,7 +1451,6 @@ function exportiereSimulationsdaten() {
       hubHeight: t.get('hubHeight'),
       rotorRadius: t.get('rotorRadius'),
       tipSpeedRatio: t.get('tipSpeedRatio'),
-      sphereRadius: t.get('sphereRadius')
     }));
   //parts
   const towerCheckbox = document.getElementById('tower').checked;
@@ -1449,7 +1470,7 @@ function exportiereSimulationsdaten() {
     windSpeed: parseFloat(document.getElementById('windSpeed').value),
     turbIntensity: parseFloat(document.getElementById('turbIntensity').value),
     sphereRadius: parseFloat(document.getElementById('sphereRadius').value),
-    hubHeight: parseFloat(document.getElementById('hubHeight').value),
+    hubHeight: parseFloat(document.getElementById('hubHeightDropdown').value),
     profileHeights: document.getElementById('profileHeights').value
                       .split(',')
                       .map(s => parseFloat(s.trim())),

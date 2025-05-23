@@ -10,7 +10,7 @@ rm -rf VTK processor*
 
 restore0Dir
 
-mpirun -np 120 pimpleFoam -parallel
+mpirun -np 80 pimpleFoam -parallel
 
 runApplication reconstructPar
 
