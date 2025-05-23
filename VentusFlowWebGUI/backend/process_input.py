@@ -1,3 +1,14 @@
+# =============================================================
+# Author: Malte Schudek
+# Repository: https://github.com/malte-code/VentusFlow
+# File: backend/process_input.py
+#
+# Quellen für Simulationstemplates:
+#   https://develop.openfoam.com/committees/hpc/-/tree/develop/incompressible/pimpleFoam/LES/offshorewindpark
+# OpenFOAM: https://www.openfoam.com/news/main-news/openfoam-v2212
+# turbinesFoam: https://github.com/fcgaleazzo/turbinesFoam
+# =============================================================
+
 """
 This script processes input data from a JSON file for an OpenFOAM simulation, 
 generates necessary configuration files, and prepares the simulation environment.
@@ -35,8 +46,23 @@ import math
 # Neue globale Hilfsfunktionen für Polygonüberlappung und Gruppierung
 
 def point_in_poly(x, y, poly, tol=1e-9):
-    # Ray-casting algorithm with tolerance for testing if a point is inside a polygon.
-    # If the point lies within tol of any edge or vertex, it is considered inside.
+    """
+    Ray-Casting Algorithmus (Crossing Number) zur Punkt-in-Polygon-Prüfung.
+    Prüft, ob ein Punkt (x, y) innerhalb eines Polygons poly liegt.
+    
+    Internal Parameter:
+        - inside: bool, gibt an, ob der Punkt im Polygon liegt
+        - n: Anzahl der Polygonpunkte
+        - p1x, p1y, p2x, p2y: aktuelle und nächste Ecke
+    Input:
+        - x, y: float, Koordinaten des zu prüfenden Punkts
+        - poly: Liste von (x, y)-Tupeln oder Dict mit "coordinates"
+        - tol: float, Toleranz für Koinzidenz mit Ecken/Kanten
+    Output:
+        - True, wenn Punkt im Polygon oder auf Kante/Ecke (mit tol), sonst False
+    Usage:
+        - Wird verwendet, um zu prüfen, ob ein Punkt in einer Wake-Region oder Zelle liegt (z.B. für Turbinenzuordnung)
+    """
     if isinstance(poly, dict) and "coordinates" in poly:
         poly = poly["coordinates"]
     inside = False
@@ -58,21 +84,34 @@ def point_in_poly(x, y, poly, tol=1e-9):
         p1x, p1y = p2x, p2y
     return inside
 
+
 def polygons_overlap(poly1, poly2, tol=1e-9):
     """
-    Returns True if poly1 and poly2 overlap significantly.
-    This implementation uses bounding boxes. You can replace it with a more accurate method if needed.
+    Bounding-Box-Überlappungstest für Polygone.
+    Prüft, ob sich zwei Polygone poly1 und poly2 signifikant überlappen.
+    
+    Internal Parameter:
+        - polygon_bbox: Hilfsfunktion für Bounding-Box
+        - bbox_intersection_area: Hilfsfunktion für Überlappungsfläche
+        - b1, b2: Bounding-Boxen
+        - inter_area: Überlappungsfläche
+        - area1: Fläche von poly1
+    Input:
+        - poly1, poly2: Dicts mit "coordinates"-Key (Liste von (x, y)-Tupeln)
+        - tol: float, Toleranzfaktor für Überlappungsfläche relativ zu poly1
+    Output:
+        - True, wenn Überlappung > tol * Fläche von poly1, sonst False
+    Usage:
+        - Wird verwendet, um Gruppen überlappender Polygone zu finden (z.B. Wake-Region-Clustering)
     """
     def polygon_bbox(poly):
         xs = [pt[0] for pt in poly["coordinates"]]
         ys = [pt[1] for pt in poly["coordinates"]]
         return min(xs), min(ys), max(xs), max(ys)
-    
     def bbox_intersection_area(b1, b2):
         x_overlap = max(0, min(b1[2], b2[2]) - max(b1[0], b2[0]))
         y_overlap = max(0, min(b1[3], b2[3]) - max(b1[1], b2[1]))
         return x_overlap * y_overlap
-
     b1 = polygon_bbox(poly1)
     b2 = polygon_bbox(poly2)
     inter_area = bbox_intersection_area(b1, b2)
@@ -80,7 +119,20 @@ def polygons_overlap(poly1, poly2, tol=1e-9):
     return inter_area > tol * area1
 
 def polygon_area(poly):
-    # Uses the shoelace formula.
+    """
+    Shoelace-Formel (Gauss'sche Flächenformel) zur Berechnung der Polygonfläche.
+    
+    Internal Parameter:
+        - coords: Liste der Polygonpunkte
+        - area: float, aufsummierte Fläche
+        - n: Anzahl der Punkte
+    Input:
+        - poly: Dict mit "coordinates"-Key (Liste von (x, y)-Tupeln)
+    Output:
+        - Flächeninhalt (float)
+    Usage:
+        - Wird für Flächenberechnungen in Überlappungstests und Bounding-Boxen genutzt
+    """
     coords = poly["coordinates"]
     area = 0.0
     n = len(coords)
@@ -90,16 +142,23 @@ def polygon_area(poly):
         area += x1 * y2 - x2 * y1
     return abs(area) / 2.0
 
+
 def group_overlapping_polys(polys, tol=1e-9):
     """
-    Groups polygons into clusters where polygons overlap.
+    Graphbasierter Algorithmus zur Gruppierung überlappender Polygone.
     
-    Parameters:
-        polys (list): List of polygon dictionaries. Each dictionary should have a "coordinates" key.
-        tol (float): Tolerance factor for determining overlap.
-        
-    Returns:
-        list: A list of groups, where each group is a list of polygons that overlap.
+    Internal Parameter:
+        - graph: Adjazenzliste für Überlappungen
+        - visited: Liste, ob Polygon besucht wurde
+        - groups: Ergebnisgruppen
+        - dfs: Tiefensuche zur Gruppierung
+    Input:
+        - polys: Liste von Polygon-Dicts mit "coordinates"-Key
+        - tol: float, Toleranz für Überlappung
+    Output:
+        - Liste von Gruppen (jeweils Liste von Polygonen)
+    Usage:
+        - Wird verwendet, um Wake-Regionen zu clustern, die sich überlappen
     """
     n = len(polys)
     graph = {i: [] for i in range(n)}
@@ -108,17 +167,14 @@ def group_overlapping_polys(polys, tol=1e-9):
             if polygons_overlap(polys[i], polys[j], tol):
                 graph[i].append(j)
                 graph[j].append(i)
-    
     visited = [False] * n
     groups = []
-
     def dfs(idx, group):
         visited[idx] = True
         group.append(polys[idx])
         for neighbor in graph[idx]:
             if not visited[neighbor]:
                 dfs(neighbor, group)
-
     for i in range(n):
         if not visited[i]:
             group = []
@@ -126,30 +182,45 @@ def group_overlapping_polys(polys, tol=1e-9):
             groups.append(group)
     return groups
 
-# Simulation Data
-#------------------------------------------------
-json_filename = 'simulation_parameters.json'    ###Make sure this is referenzed correctly
 
 def get_simulation_data(json_file_path=None):
     """
-    Load simulation data from a JSON file.
-    If no path is provided, defaults to 'simulation_parameters.json' located in the same directory as this script.
+    Lädt die Simulationsdaten aus einer JSON-Datei.
+    
+    Internal Parameter:
+        - json_file_path: Pfad zur JSON-Datei
+        - simulation_data: geladene Daten (dict)
+    Input:
+        - json_file_path: Optionaler Pfad zur JSON-Datei. Wenn None, wird 'simulation_parameters.json' im gleichen Verzeichnis wie das Skript verwendet.
+    Output:
+        - Dictionary mit Simulationsdaten
+    Usage:
+        - Zentrale Funktion zum Einlesen aller Simulationsparameter für nachfolgende Verarbeitung
     """
-
     if json_file_path is None:
-        json_file_path = os.path.join(os.path.dirname(__file__), json_filename)
-
+        json_file_path = os.path.join(os.path.dirname(__file__), 'simulation_parameters.json')
     if not os.path.exists(json_file_path):
         print(f"Fehler: Datei {json_file_path} nicht gefunden!")
         sys.exit(1)
-
     with open(json_file_path, 'r') as file:
         simulation_data = json.load(file)
     return simulation_data
 
-# ROOT-Ordner
-#------------------------------------------------
+
 def get_case_folder():
+    """
+    Ermittelt den Zielordner für die OpenFOAM-Case-Dateien.
+    
+    Internal Parameter:
+        - simulation_data: dict, Simulationsdaten
+        - root_case_folder: Zielordner (str)
+    Input:
+        - keine (liest aus JSON)
+    Output:
+        - Absoluter Pfad zum Case-Ordner (str)
+    Usage:
+        - Wird von allen Dateigenerierungsfunktionen genutzt, um den Zielpfad zu bestimmen
+    """
     simulation_data = get_simulation_data()
     try:
         root_case_folder = os.path.join(os.path.dirname(__file__), '..', '..', simulation_data["rootFolder"])
@@ -287,8 +358,12 @@ class WakeRegion:
             return abs(area) / 2.0
         
         def point_in_poly(x, y, poly, tol=1e-9):
-            # Ray-casting algorithm with tolerance for testing if a point is inside a polygon.
-            # If the point lies within tol of any edge or vertex, it is considered inside.
+            """
+            Prüft, ob ein Punkt (x, y) innerhalb eines Polygons poly liegt.
+            - poly: Liste von (x, y)-Tupeln oder ein Dict mit "coordinates"-Key.
+            - tol: Toleranz für die Koinzidenz mit Ecken/Kanten.
+            Rückgabe: True, wenn Punkt im Polygon oder auf Kante/Ecke (mit tol), sonst False.
+            """
             if isinstance(poly, dict) and "coordinates" in poly:
                 poly = poly["coordinates"]
             inside = False
@@ -864,8 +939,6 @@ def compute_mesh_parameters():
 #------------------------------------------------
 
 
-
-
 ################################################
 #------------------------------------------------
 # PREPROCESSING Settings
@@ -876,6 +949,18 @@ def compute_mesh_parameters():
 # Allclean
 #------------------------------------------------
 def create_allclean_script():
+    """
+    Erstellt das Skript 'Allclean' zum Bereinigen des Simulationsverzeichnisses.
+    
+    Internal Parameter:
+        - allclean_path: Pfad zur Ausgabedatei
+    Input:
+        - keine (liest Zielordner aus get_case_folder)
+    Output:
+        - Schreibt Shell-Skript 'Allclean' in den Case-Ordner
+    Usage:
+        - Wird vor jedem neuen Simulationslauf ausgeführt, um alte Ergebnisse zu entfernen
+    """
     allclean_path = os.path.join(get_case_folder(), "Allclean")
 
     with open(allclean_path, 'w') as file:
@@ -899,6 +984,19 @@ create_allclean_script()
 #------------------------------------------------
 
 def create_allpre_script():
+    """
+    Erstellt das Skript 'Allpre' zur Vorbereitung des Grids und der Mesh-Verfeinerung.
+    
+    Internal Parameter:
+        - allpre_path: Pfad zur Ausgabedatei
+        - wake_names: Liste der Wake-Region-IDs
+    Input:
+        - keine (liest Zielordner und Wake-Regionen aus get_case_folder/WakeRegion)
+    Output:
+        - Schreibt Shell-Skript 'Allpre' in den Case-Ordner
+    Usage:
+        - Automatisiert die Mesh-Erstellung und -Verfeinerung für OpenFOAM
+    """
     allpre_path = os.path.join(get_case_folder(), "Allpre")
 
     with open(allpre_path, 'w') as file:
@@ -982,6 +1080,19 @@ create_allpre_script()
 # blockMeshDict
 #------------------------------------------------
 def create_blockMeshDict():
+    """
+    Erstellt die zentrale OpenFOAM-Meshdatei 'blockMeshDict'.
+    
+    Internal Parameter:
+        - blockMeshDict_path: Pfad zur Ausgabedatei
+        - meshParams: dict mit Mesh-Parametern
+    Input:
+        - keine (liest Parameter aus compute_mesh_parameters)
+    Output:
+        - Schreibt 'blockMeshDict' in den system-Ordner des Case
+    Usage:
+        - Definiert das Grundgitter für die Simulation
+    """
     blockMeshDict_path = os.path.join(get_case_folder(), "system/blockMeshDict")
     meshParams = compute_mesh_parameters()
     with open(blockMeshDict_path, 'w') as file:
@@ -1087,6 +1198,18 @@ create_blockMeshDict()
 # 0.orig files
 #------------------------------------------------
 def create_nut_file():
+    """
+    Erstellt die Datei 'nut' mit Anfangsbedingungen für die turbulente Viskosität.
+    
+    Internal Parameter:
+        - nut_path: Pfad zur Ausgabedatei
+    Input:
+        - keine (liest Zielordner aus get_case_folder)
+    Output:
+        - Schreibt 'nut' in den 0.orig-Ordner
+    Usage:
+        - Wird von OpenFOAM als Startwert für die Simulation benötigt
+    """
     nut_path = os.path.join(get_case_folder(), "0.orig/nut")
     with open(nut_path, 'w') as file:
         file.write("/*--------------------------------*- C++ -*----------------------------------*\\\n")
@@ -1146,6 +1269,18 @@ def create_nut_file():
     # print(f"nut file successfully created at: \n{nut_path}")
 
 def create_U_file():
+    """
+    Erstellt die Datei 'U' mit Anfangsbedingungen für die Geschwindigkeit.
+    
+    Internal Parameter:
+        - U_path: Pfad zur Ausgabedatei
+    Input:
+        - keine (liest Zielordner aus get_case_folder)
+    Output:
+        - Schreibt 'U' in den 0.orig-Ordner
+    Usage:
+        - Wird von OpenFOAM als Startwert für die Simulation benötigt
+    """
     U_path = os.path.join(get_case_folder(), "0.orig/U")
     with open(U_path, 'w') as file:
         file.write("/*--------------------------------*- C++ -*----------------------------------*\\\n")
@@ -1220,6 +1355,18 @@ def create_U_file():
     # print(f"U file successfully created at: \n{U_path}")
 
 def create_p_file():
+    """
+    Erstellt die Datei 'p' mit Anfangsbedingungen für den Druck.
+    
+    Internal Parameter:
+        - p_path: Pfad zur Ausgabedatei
+    Input:
+        - keine (liest Zielordner aus get_case_folder)
+    Output:
+        - Schreibt 'p' in den 0.orig-Ordner
+    Usage:
+        - Wird von OpenFOAM als Startwert für die Simulation benötigt
+    """
     p_path = os.path.join(get_case_folder(), "0.orig/p")
     with open(p_path, 'w') as file:
         file.write("/*--------------------------------*- C++ -*----------------------------------*\\\n")
@@ -1284,6 +1431,24 @@ create_p_file()
 #------------------------------------------------
 
 def create_initial_conditions_file():
+    """
+    Erstellt die initialConditions-Datei mit Windgeschwindigkeits- und Turbinenreferenzrichtungen.
+    
+    Internal Parameter:
+        - environment: Environment-Objekt mit Simulationsumgebung
+        - simArea: SimulationArea-Objekt mit Simulationsbereich
+        - windTurbines: WindTurbines-Objekt mit Turbineninformationen
+        - meteoAngleRad: berechneter Meteo-Winkel für ALM
+        - alm_x_axis, alm_y_axis: ALM Turbinen-Referenzrichtungen
+        - U_x_inital, U_y_inital: Komponenten des Windvektors
+        - initialConditions_path: Pfad zur Ausgabedatei
+    Input:
+        - keine (liest aus Environment, SimulationArea, WindTurbines)
+    Output:
+        - Schreibt die initialConditions in den system-Ordner des Case
+    Usage:
+        - Setzt die Anfangsbedingungen für die Windgeschwindigkeit und Turbinenreferenzrichtungen
+    """
     environment = Environment.getEnvironment()
     simArea = SimulationArea.getSimulationArea()
     windTurbines = WindTurbines.getTurbines()
@@ -1374,6 +1539,25 @@ create_initial_conditions_file()
 #------------------------------------------------
 
 def create_inlet_conditions():
+    """
+    Erstellt die Inlet-Bedingungen für die Simulation basierend auf der Windgeschwindigkeit und -richtung.
+    
+    Internal Parameter:
+        - environment: Environment-Objekt mit Simulationsumgebung
+        - turbines: WindTurbines-Objekt mit Turbineninformationen
+        - angle: berechneter Winkel für die Strömungsrichtung
+        - k_roughness_inlet, z_zero_inlet: Rauhigkeits- und Referenzhöhe für die logarithmische Geschwindigkeitsverteilung
+        - ustar: berechnete Schubspannungsgeschwindigkeit
+        - pointsBuffer, UBuffer, RBuffer: Puffervariablen für Punkte, Geschwindigkeits- und Turbulenzdaten
+        - outFiles: Ausgabedateien für die Inlet-Bedingungen
+        - inlet_path, inlet_0_path: Pfade für die Erstellung der Verzeichnisse
+    Input:
+        - keine (liest aus Environment, WindTurbines)
+    Output:
+        - Schreibt die Inlet-Bedingungen in die entsprechenden Verzeichnisse
+    Usage:
+        - Setzt die Randbedingungen für den Inlet-Bereich der Simulation
+    """
     environment = Environment.getEnvironment()
     turbines = WindTurbines.getTurbines()
 
@@ -1443,6 +1627,23 @@ create_inlet_conditions()
 #------------------------------------------------
 
 def create_refine_files():
+    """
+    Erstellt die topoSetDict- und refineMeshDict-Dateien für die Mesh-Verfeinerung in verschiedenen Höhen.
+    
+    Internal Parameter:
+        - turbines: WindTurbines-Objekt mit Turbineninformationen
+        - meshParams: dict mit Mesh-Parametern
+        - refineRegionsnames: Liste der Verfeinerungsregionsnamen
+        - refineRegionIndex: Liste der Verfeinerungsindexnamen
+        - refine1height, refine2height, refine3height: Höhen für die Verfeinerung
+        - refineHeights: Liste der Verfeinerungshöhen
+    Input:
+        - keine (liest aus WindTurbines, compute_mesh_parameters)
+    Output:
+        - Schreibt topoSetDict.refine1, refineMeshDict.refine1 usw. in den system-Ordner des Case
+    Usage:
+        - Definiert die Verfeinerungszonen und -parameter für die Mesh-Erstellung in OpenFOAM
+    """
     turbines = WindTurbines.getTurbines()
     meshParams = compute_mesh_parameters()
     refineRegionsnames = ["refineRegion1", "refineRegion2", "refineH3"]
@@ -1548,6 +1749,21 @@ create_refine_files()
 #------------------------------------------------
 
 def create_topoSetDict_wakeregions():
+    """
+    Erstellt die topoSetDict-Datei für die Windturbinenplatzierung basierend auf den Wake-Regionen.
+    
+    Internal Parameter:
+        - topoSetDictwakeregions_path: Pfad zur Ausgabedatei
+        - simulationArea: SimulationArea-Objekt mit Simulationsbereich
+        - turbine_data: WindTurbines-Objekt mit Turbineninformationen
+        - refine3height: Höhe für die Verfeinerung der Wake-Regionen
+    Input:
+        - keine (liest Zielordner aus get_case_folder, SimulationArea und WindTurbines für Daten)
+    Output:
+        - Schreibt topoSetDict.wakeregions in den system-Ordner des Case
+    Usage:
+        - Definiert die Platzierung der Windturbinen in der Simulation
+    """
     topoSetDictwakeregions_path = os.path.join(get_case_folder(), "system/topoSetDict.wakeregions")
     simulationArea = SimulationArea.getSimulationArea()
     turbine_data = WindTurbines.getTurbines()
@@ -1625,6 +1841,18 @@ create_topoSetDict_wakeregions()
 # refineMeshDict.wakeregions
 #------------------------------------------------
 def create_refineMeshDict_wakeregions():
+    """
+    Erstellt die refineMeshDict-Datei für die Verfeinerung der Mesh in den Wake-Regionen.
+    
+    Internal Parameter:
+        - refineMeshDict_wakeregions_path: Pfad zur Ausgabedatei
+    Input:
+        - keine (liest Zielordner aus get_case_folder)
+    Output:
+        - Schreibt refineMeshDict.wakeregions in den system-Ordner des Case
+    Usage:
+        - Definiert die Verfeinerungsparameter für die Mesh-Erstellung in den Wake-Regionen
+    """
     refineMeshDict_wakeregions_path = os.path.join(get_case_folder(), "system/refineMeshDict.wakeregions")
 
     with open(refineMeshDict_wakeregions_path, 'w') as file:
@@ -1692,6 +1920,19 @@ create_refineMeshDict_wakeregions()
 # Allrun
 #------------------------------------------------
 def create_allrun_script():
+    """
+    Erstellt das Skript 'Allrun' zum Ausführen der Simulation in parallel.
+    
+    Internal Parameter:
+        - computeCores: Anzahl der zu verwendenden Rechenkernen
+        - allrun_path: Pfad zur Ausgabedatei
+    Input:
+        - keine (liest Anzahl der Kerne aus SolverParameters)
+    Output:
+        - Schreibt Shell-Skript 'Allrun' in den Case-Ordner
+    Usage:
+        - Führt die Simulation auf dem HPC-System aus
+    """
     computeCores = SolverParameters.getSolverParameters().computeCores
     allrun_path = os.path.join(get_case_folder(), "Allrun")
     with open(allrun_path, 'w') as file:
@@ -1720,6 +1961,18 @@ create_allrun_script()
 # Allpost
 #------------------------------------------------
 def create_allpost_script():
+    """
+    Erstellt das Skript 'Allpost' für die Nachbearbeitung der Simulationsergebnisse.
+    
+    Internal Parameter:
+        - allpost_path: Pfad zur Ausgabedatei
+    Input:
+        - keine (liest Zielordner aus get_case_folder)
+    Output:
+        - Schreibt Shell-Skript 'Allpost' in den Case-Ordner
+    Usage:
+        - Automatisiert die Nachbearbeitung und Ergebnisvisualisierung in OpenFOAM
+    """
     allpost_path = os.path.join(get_case_folder(), "Allpost")
 
     with open(allpost_path, 'w') as file:
@@ -1742,6 +1995,19 @@ create_allpost_script()
 # Allrun.slurm
 #------------------------------------------------
 def create_allrun_slurm_script():
+    """
+    Erstellt das SLURM-Skript 'Allrun.slurm' zum Ausführen der Simulation in parallel auf dem HPC.
+    
+    Internal Parameter:
+        - computeCores: Anzahl der zu verwendenden Rechenkernen
+        - allrun_slurm_path: Pfad zur Ausgabedatei
+    Input:
+        - keine (liest Anzahl der Kerne aus SolverParameters)
+    Output:
+        - Schreibt SLURM-Skript 'Allrun.slurm' in den Case-Ordner
+    Usage:
+        - SLURM-Skript zur Ausführung der Simulation auf dem HPC
+    """
     computeCores = SolverParameters.getSolverParameters().computeCores
     allrun_slurm_path = os.path.join(get_case_folder(), "Allrun.slurm")
     with open(allrun_slurm_path, 'w') as file:
@@ -1771,6 +2037,18 @@ create_allrun_slurm_script()
 # Allpost.slurm
 # ------------------------------------------------
 def create_allpost_slurm_script():
+    """
+    Erstellt das SLURM-Skript 'Allpost.slurm' für die Nachbearbeitung der Simulationsergebnisse.
+    
+    Internal Parameter:
+        - allpost_slurm_path: Pfad zur Ausgabedatei
+    Input:
+        - keine (liest Zielordner aus get_case_folder)
+    Output:
+        - Schreibt SLURM-Skript 'Allpost.slurm' in den Case-Ordner
+    Usage:
+        - SLURM-Skript zur Nachbearbeitung der Simulationsergebnisse
+    """
     allpost_slurm_path = os.path.join(get_case_folder(), "Allpost.slurm")
 
     with open(allpost_slurm_path, 'w') as file:
@@ -1794,6 +2072,19 @@ def create_allpost_slurm_script():
 # controlDict
 #------------------------------------------------
 def create_controlDict():
+    """
+    Erstellt die Steuerdatei 'controlDict' für die OpenFOAM-Simulation.
+    
+    Internal Parameter:
+        - solverParameters: SolverParameters-Objekt mit Solver-Einstellungen
+        - controlDict_path: Pfad zur Ausgabedatei
+    Input:
+        - keine (liest aus SolverParameters)
+    Output:
+        - Schreibt 'controlDict' in den system-Ordner des Case
+    Usage:
+        - Definiert die Steuerparameter für die Simulation
+    """
     solverParameters = SolverParameters.getSolverParameters()
     controlDict_path = os.path.join(get_case_folder(), "system/controlDict")
     with open(controlDict_path, 'w') as file:
@@ -1864,13 +2155,25 @@ def create_controlDict():
 
     # print(f"controlDict successfully created at: \n{controlDict_path}")
 
-# Call the function
 create_controlDict()
 
 #------------------------------------------------
 # decomposeParDict
 #------------------------------------------------
 def create_decomposeParDict():
+    """
+    Erstellt die decomposeParDict-Datei für die Parallelisierung der Simulation.
+    
+    Internal Parameter:
+        - solverParameters: SolverParameters-Objekt mit Solver-Einstellungen
+        - decomposeParDict_path: Pfad zur Ausgabedatei
+    Input:
+        - keine (liest Anzahl der Kerne aus SolverParameters)
+    Output:
+        - Schreibt 'decomposeParDict' in den system-Ordner des Case
+    Usage:
+        - Definiert die Parallelisierungsparameter für die Simulation
+    """
     solverParameters = SolverParameters.getSolverParameters()
     decomposeParDict_path = os.path.join(get_case_folder(), "system/decomposeParDict")
 
@@ -1914,6 +2217,22 @@ create_decomposeParDict()
 # fvOptions
 #------------------------------------------------
 def create_fvOptions():
+    """
+    Erstellt die fvOptions-Datei für die Turbinen- und Atmosphärenmodelle in der Simulation.
+    
+    Internal Parameter:
+        - fvOptions_path: Pfad zur Ausgabedatei
+        - simulation_area: SimulationArea-Objekt mit Simulationsbereich
+        - wakeRegions: Liste der Wake-Regionen
+        - turbine_data: WindTurbines-Objekt mit Turbineninformationen
+        - turbine_blocks: Generierter Block für jede Turbine
+    Input:
+        - keine (liest aus SimulationArea, WakeRegion, WindTurbines)
+    Output:
+        - Schreibt 'fvOptions' in den constant-Ordner des Case
+    Usage:
+        - Definiert die Turbinen- und Atmosphärenmodelleinstellungen für die Simulation
+    """
     ## get data
     fvOptions_path = os.path.join(get_case_folder(), "constant/fvOptions")
     simulation_area = SimulationArea.getSimulationArea()
@@ -2169,6 +2488,9 @@ def create_fvOptions():
 
 create_fvOptions()
 
+#------------------------------------------------
+# monitorPoints
+#------------------------------------------------
 # def create_monitorPoints():
 #     monitorPointsStatus = "false"
 #     monitorPoints_path = os.path.join(get_case_folder(), "system/monitorPoints")
@@ -2208,6 +2530,19 @@ create_fvOptions()
 # writeForceAllTurbines
 #------------------------------------------------
 def create_writeForceAllTurbines():
+    """
+    Erstellt die writeForceAllTurbines-Datei zum Zusammenfassen der Kräfte aller Turbinen in ein einzelnes Feld.
+    
+    Internal Parameter:
+        - turbine_data: WindTurbines-Objekt mit Turbineninformationen
+        - writeForceAllTurbines_path: Pfad zur Ausgabedatei
+    Input:
+        - keine (liest aus WindTurbines)
+    Output:
+        - Schreibt 'writeForceAllTurbines' in den system-Ordner des Case
+    Usage:
+        - Ermöglicht die Visualisierung der Gesamtkraft auf alle Turbinen
+    """
     turbine_data = WindTurbines.getTurbines()
     writeForceAllTurbines_path = os.path.join(get_case_folder(), "system/writeForceAllTurbines")
 
@@ -2276,6 +2611,20 @@ create_writeForceAllTurbines()
 #------------------------------------------------
 #TODO: make it work for openFOAM (needs to be aktivated in controlDict)
 def create_sampleSlice():
+    """
+    Erstellt die sampleSliceDict-Datei für die Extraktion von Querschnitten in der Simulation.
+    
+    Internal Parameter:
+        - turbines: WindTurbines-Objekt mit Turbineninformationen
+        - hubHeight: Hubhöhe der Turbinen
+        - sampleSlice_path: Pfad zur Ausgabedatei
+    Input:
+        - keine (liest aus WindTurbines)
+    Output:
+        - Schreibt 'sampleSliceDict' in den system-Ordner des Case
+    Usage:
+        - Definiert die Querschnitts-Einstellungen für die Ergebnisanalyse
+    """
     turbines = WindTurbines.getTurbines()
     hubHeight = turbines['turbines'][0]['hubHeight']
     sampleSlice_path = os.path.join(get_case_folder(), "system/sampleSliceDict")
@@ -2325,13 +2674,24 @@ def create_sampleSlice():
 # Call the function
 create_sampleSlice()
 
-
 #------------------------------------------------
 #------------------------------------------------
 # Summary
 #------------------------------------------------
 #------------------------------------------------
 def print_simulation_summary():
+    """
+    Gibt eine Zusammenfassung der Simulationsparameter aus.
+    
+    Internal Parameter:
+        - meshParameters: Mesh-Parameter der Simulation
+    Input:
+        - keine (liest aus compute_mesh_parameters)
+    Output:
+        - Gibt die Zusammenfassung auf der Konsole aus
+    Usage:
+        - Übersicht über die wichtigsten Simulationsparameter
+    """
     meshParameters = compute_mesh_parameters()
     """Prints the simulation summary based on mesh parameters."""
     print("\nSimulation Summary:")
