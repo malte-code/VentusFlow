@@ -71,7 +71,7 @@ Die Datei `index.html` bildet das Grundgerüst der Benutzeroberfläche für die 
 
 ## Hinweise zur Erweiterung und Anpassung
 
-- **IDs und Klassen:**
+- **IDs:**
   - Die IDs der HTML-Elemente sind exakt auf die Logik in `main.js` abgestimmt. Änderungen an den IDs erfordern Anpassungen im JavaScript.
 - **Panels und Buttons:**
   - Die Panels sind einklappbar und können um weitere Parameter oder Einstellungen ergänzt werden.

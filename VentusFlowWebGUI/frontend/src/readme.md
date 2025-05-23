@@ -6,7 +6,7 @@
 
 **Studienarbeit Energietechnik** | April 2025 | Bericht Nr. 001  
 **Repository:** [github.com/malte-code/VentusFlow](https://github.com/malte-code/VentusFlow)  
-**Datei:** `frontend/src/main.js`
+**Datei:** `frontend/src/README.md`
 ---
 
 # README: frontend/src/main.js
