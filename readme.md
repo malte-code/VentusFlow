@@ -180,6 +180,9 @@ Ohne Agenten ist eine Passphrase-Eingabe notwendig (unsicher, da das Passwort zu
 
 ---
 
-## MIT Lizenz
+## GPLv3 Lizenz
+
+Dieses Projekt steht unter der GNU General Public License Version 3 (GPLv3).  
+Siehe die Datei `LICENSE` für weitere Details.
 
 Copyright (c) 2024 – VentusFlowWebGUI Projekt
