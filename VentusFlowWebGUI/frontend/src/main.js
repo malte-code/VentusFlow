@@ -1,3 +1,9 @@
+/*
+Author: Malte Schudek
+Repository: https://github.com/malte-code/VentusFlow
+File: frontend/src/main.js
+*/
+
 // ======================================================================
 // Global Styles
 // 
@@ -130,11 +136,6 @@ let turbineLayer = null;          // Vektorlayer für Turbinen
 let simAreaSource = null;         // Vektorquelle für Simulationsgebiet (Rechtecke/Quadrate)
 let simAreaLayer = null;          // Vektorlayer für Simulationsgebiet
 
-//Turbinen-Parameter
-const turbineSpecs = {
-    NREL6MW_17: { rotorRadius: 77, tipSpeedRatio: 6.8, hubRadius: 3 },
-    NREL15MW_17: { rotorRadius: 110, tipSpeedRatio: 8.5, hubRadius: 6 }, 
-};
 // ======================================================================
 // Karten- und Zeichenebenen-Erstellung
 // ======================================================================
@@ -399,12 +400,57 @@ document.getElementById('toggleTurbinenPanel').addEventListener('click', functio
 });
 
 //turbines
+
+//Turbinen-Parameter
+const turbineSpecs = {
+  NREL6MW_17: {
+    rotorRadius: 77,
+    tipSpeedRatio: 6.8,
+    hubHeights: [90, 100, 110],
+
+    // mögliche zukünftige Werte (siehe backend process_input.py und offshorewindpark_VentusFlow/constant/*TurbineType*/* for input structure of full turbinedata (airfoils, elementProfiles, elementData (turbinesFoam input (https://github.com/fcgaleazzo/turbinesFoam))) ))
+    //(im backend) sollten eine Werte beartet werden.
+    //  Werte sollten in Abhängigkeit der initalConditions sein für Turbine1. Turbine2 (im wake von Turbine1) könnte während der Simulation andere Werte haben. Die Simulation ist Laufzeitmodifikation "runTimeModifiable yes;" mit dem output der v_mean in der Rotorebene könnte pro Zeitschritt tsr berechnet werden und in fvOptions eingesetzt werden. 
+    // nBlades: 3,                // Anzahl der Rotorblätter
+    // omega: 9.2,                // Winkelgeschwindigkeit [rad/s]
+    // //rpm: omega * 60 / (2 * Math.PI), // Drehzahl [U/min]
+    // pitchAngle: 2.0,           // Blattwinkel [Grad]
+    // yawAngle: 0.0,             // Gierwinkel [Grad]
+    // bladeGeometry: [           // Geometrie der Rotorblätter an verschiedenen Radien
+    //   { r: 3.5, chord: 4.2, twist: 13.5, airfoil: "FFA-W3-301" },   // r: Radius [m], chord: Profiltiefe [m], twist: Verdrehung [Grad], airfoil: Profilname
+    //   { r: 10, chord: 4.0, twist: 10.0, airfoil: "FFA-W3-301" },
+    //   { r: 30, chord: 3.0, twist: 5.0, airfoil: "NACA64-618" },
+    //   // ... weitere Radialpunkte
+    //]
+  },
+
+  NREL15MW_17: {
+    rotorRadius: 110,
+    tipSpeedRatio: 8.5,
+    hubHeights: [140, 150, 160], // Mehrere mögliche Nabenhöhen
+
+  }
+};
+
+//Parameter-Panel
 document.getElementById('turbineTypeDropdown').addEventListener('change', () => {
   const turbineType = document.getElementById('turbineTypeDropdown').value;
   const specs = turbineSpecs[turbineType];
   if (specs) {
-      document.getElementById('rotorRadius').textContent = specs.rotorRadius;
-      document.getElementById('tipSpeedRatio').textContent = specs.tipSpeedRatio;
+    document.getElementById('rotorRadius').textContent = specs.rotorRadius;
+    document.getElementById('tipSpeedRatio').textContent = specs.tipSpeedRatio;
+
+    // Hubhöhen-Dropdown füllen
+    const hubHeightDropdown = document.getElementById('hubHeightDropdown');
+    hubHeightDropdown.innerHTML = '';
+    specs.hubHeights.forEach(hh => {
+      const option = document.createElement('option');
+      option.value = hh;
+      option.textContent = hh;
+      hubHeightDropdown.appendChild(option);
+    });
+    // Optional: ersten Wert als Standard setzen
+    hubHeightDropdown.value = specs.hubHeights[0];
   }
 });
 
@@ -1508,6 +1554,7 @@ function sendCommandToServer(command, customCommand) {
   }
 }
 
+// Event-Listener für die Buttons
 document.getElementById('LocalToRemoteButton').addEventListener('click', () => sendCommandToServer('sync'));
 document.getElementById('allCleanButton').addEventListener('click', () => sendCommandToServer('clean'));
 document.getElementById('allPreButton').addEventListener('click', () => sendCommandToServer('pre'));
@@ -1516,79 +1563,5 @@ document.getElementById('CalcStatusButton').addEventListener('click', () => send
 document.getElementById('allPostButton').addEventListener('click', () => sendCommandToServer('post'));
 document.getElementById('getVTKButton').addEventListener('click', () => sendCommandToServer('VTK'));
 // document.getElementById('allRunButton').addEventListener('click', () => sendCommandToServer('all'));
-// document.getElementByI// d('customButton').addE// ventListener('click', // () => {
-//   const custo //mCommand = document.ge //tElementById('allCustom').value;
-//   sendCommandToServer('custom', customCommand);
-// }
-// );
-  // // ======================================================================
-// // JSON Modal-Funktionalität
-// // ======================================================================
-
-// function oeffneJSONModal() {
-//   if (!currentShape) {
-//     alert("Kein Shape definiert.");
-//     return;
-//   }
-//   const ecken = currentShape.getGeometry().getCoordinates()[0];
-//   const mitte = currentShape.getGeometry().getInteriorPoint().getCoordinates();
-//   const dimensionen = berechneDimensionen(currentShape.getGeometry(), squareAngleRadian);
-  
-//   // Hier kannst du auch weitere Parameter einbinden, wenn gewünscht:
-//   const panelParameters = {
-//     windSpeed: parseFloat(document.getElementById('windSpeed').value),
-//     turbIntensity: parseFloat(document.getElementById('turbIntensity').value),
-//     sphereRadius: parseFloat(document.getElementById('sphereRadius').value),
-//     profileHeights: document.getElementById('profileHeights').value.split(',').map(s => parseFloat(s.trim())),
-//     cellDensity: parseFloat(document.getElementById('cellDensity').value),
-//     startTime: parseFloat(document.getElementById('startTime').value),
-//     endTime: parseFloat(document.getElementById('endTime').value),
-//     deltaT: parseFloat(document.getElementById('deltaT').value),
-//     writeInterval: parseFloat(document.getElementById('writeInterval').value)
-//   };
-
-//   // Turbinen (Punkte) abrufen
-//   const turbines = drawSource.getFeatures()
-//     .filter(f => f.getGeometry().getType() === 'Point')
-//     .map((t, index) => ({
-//       id: `Turbine_${index + 1}`,
-//       coordinates: t.getGeometry().getCoordinates()
-//     }));
-
-//   // Neu organisierte JSON-Struktur
-//   const exportDaten = {
-//     simulationArea: {
-//       cornerPoints: ecken,
-//       centerPoint: mitte,
-//       dimensions: {
-//         width: dimensionen.width,
-//         depth: dimensionen.depth
-//       },
-//       rotationAngle: squareAngleRadian
-//     },
-//     turbines:{
-//       turbines: turbines,
-//       sphereRadius: panelParameters.sphereRadius,
-//     },
-//     environment: {
-//       wind: {
-//         direction: squareAngleRadian,
-//         speed: panelParameters.windSpeed,
-//         turbulenceIntensity: panelParameters.turbIntensity,
-//         profileHeights: panelParameters.profileHeights
-//       },
-//       cellDensity: panelParameters.cellDensity
-//     },
-//     Solver: {
-//       startTime: panelParameters.startTime,
-//       endTime: panelParameters.endTime,
-//       deltaT: panelParameters.deltaT,
-//       writeInterval: panelParameters.writeInterval
-//     }
-//   };
-
-//   const simulationData = JSON.stringify(exportDaten, null, 2);
-//   const modalContent = document.getElementById("jsonContent");
-//   modalContent.textContent = simulationData;
-//   document.getElementById("jsonModal").style.display = "block";
-// }document.getElementById("showJsonButton").addEventListener("click", oeffneJSONModal);
+// document.getElementById('customButton').addEventListener('click', () => {
+//   const custo
