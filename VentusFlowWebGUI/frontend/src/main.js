@@ -27,6 +27,8 @@ import './styles/style.css';
 import { Style, Icon, Stroke, RegularShape, Fill, Text } from 'ol/style';
 // Point: Zum Erzeugen von Punkt-Geometrien, z. B. für den Pfeilkopf.
 import Point from 'ol/geom/Point';
+import PointerInteraction from 'ol/interaction/Pointer.js';
+import {defaults as defaultInteractions} from 'ol/interaction/defaults.js';
 // Definiert einen Icon-Stil für Windturbinen. Dieser Stil kann dann 
 // auf Punktfeatures angewendet werden, um statt eines einfachen Punktes 
 // ein Windturbinen-Symbol anzuzeigen.
@@ -38,6 +40,8 @@ const turbineIconStyle = new Style({
     anchor: [0.5, 0.9],              // Zentriert horizontal und am unteren Rand verankert
   }),
 });
+const turbineToWake = new Map();
+const wakeToTurbine = new Map();
 
 // ======================================================================
 // OpenLayers Feature- und POLYGON Geometrie-Klassen
@@ -147,6 +151,124 @@ let simAreaLayer = null;          // Vektorlayer für Simulationsgebiet
 // Karten- und Zeichenebenen-Erstellung
 // ======================================================================
 
+// Drag Interaction
+
+class Drag extends PointerInteraction {
+  constructor() {
+    super({
+      handleDownEvent: handleDownEvent,
+      handleDragEvent: handleDragEvent,
+      handleMoveEvent: handleMoveEvent,
+      handleUpEvent: handleUpEvent,
+    });
+
+    /**
+     * @type {import('ol/coordinate.js').Coordinate}
+     * @private
+     */
+    this.coordinate_ = null;
+
+    /**
+     * @type {string|undefined}
+     * @private
+     */
+    this.cursor_ = 'pointer';
+
+    /**
+     * @type {Feature}
+     * @private
+     */
+    this.feature_ = null;
+
+    /**
+     * @type {string|undefined}
+     * @private
+     */
+    this.previousCursor_ = undefined;
+  }
+}
+
+/**
+ * @param {import('ol/MapBrowserEvent.js').default} evt Map browser event.
+ * @return {boolean} `true` to start the drag sequence.
+ */
+function handleDownEvent(evt) {
+  
+  const map = evt.map;
+  
+
+  const feature = map.forEachFeatureAtPixel(evt.pixel, function (feature) {
+    return feature;
+  });
+
+  if (feature) {
+    this.coordinate_ = evt.coordinate;
+    this.feature_ = feature;
+  }
+
+  return !!feature;
+}
+
+/**
+ * @param {import('ol/MapBrowserEvent.js').default} evt Map browser event.
+ */
+function handleDragEvent(evt) {
+  const deltaX = evt.coordinate[0] - this.coordinate_[0];
+  const deltaY = evt.coordinate[1] - this.coordinate_[1];
+
+  const geometry = this.feature_.getGeometry();
+  geometry.translate(deltaX, deltaY);
+  const currType = this.feature_.get("type");
+
+  const id = this.feature_.getId()
+
+  const relatedFeature = currType === "circle"
+  ? wakeSource.getFeatureById(id)
+  : currType === "wake"
+    ? sphereRadiusSource.getFeatureById(id)
+    : null;
+
+  const relatedGeometry = relatedFeature.getGeometry();
+  relatedGeometry.translate(deltaX, deltaY);
+
+  this.coordinate_[0] = evt.coordinate[0];
+  this.coordinate_[1] = evt.coordinate[1];
+
+}
+
+/**
+ * @param {import('ol/MapBrowserEvent.js').default} evt Event.
+ */
+function handleMoveEvent(evt) {
+  if (this.cursor_) {
+    const map = evt.map;
+    const feature = map.forEachFeatureAtPixel(evt.pixel, function (feature) {
+      return feature;
+    });
+    const element = evt.map.getTargetElement();
+
+    if (feature) {
+      const id = feature.getId();
+      if (element.style.cursor != this.cursor_) {
+        this.previousCursor_ = element.style.cursor;
+        element.style.cursor = this.cursor_;
+      }
+    } else if (this.previousCursor_ !== undefined) {
+      element.style.cursor = this.previousCursor_;
+      this.previousCursor_ = undefined;
+    }
+  }
+}
+
+/**
+ * @return {boolean} `false` to stop the drag sequence.
+ */
+function handleUpEvent() {
+  this.coordinate_ = null;
+  this.feature_ = null;
+  return false;
+}
+
 /**
  * Erstellt die Basiskarte
  */
@@ -155,6 +277,7 @@ function erstelleKarte() {
     source: new OSM(),
   });
   const karte = new Map({
+    interactions: defaultInteractions().extend([new Drag()]),
     target: 'map',
     layers: [rasterLayer],
     view: new View({
@@ -165,6 +288,12 @@ function erstelleKarte() {
   return karte;
 }
 const map = erstelleKarte();
+
+
+const uid = function(){
+  return Date.now().toString(36) + Math.random().toString(36).substr(2);
+}
+
 
 /**
  * Erstellt die Zeichenebenen für die gezeichneten Features
@@ -591,6 +720,9 @@ function hinzufuegenZeichenInteraktion(formTyp) {
       event.feature.setProperties(turbineParams);
       // Für Punkte: Füge sie hinzu, ohne currentShape zu überschreiben.
       event.feature.setStyle(null); // Damit der Layer-Stil greift
+      // For each wind turbine, it is given an ID to match their according wake region
+      event.feature.setId(uid());
+      event.feature.set("type","turbine");
       
       // Sicherstellen, dass der Punkt im Source ist, bevor wir die Layer aktualisieren
       // Kleine Verzögerung, um sicherzustellen, dass wake und sphere aktualisiert werden
@@ -1028,6 +1160,7 @@ function updateWakeLayer() {
   
   pointFeatures.forEach(pointFeature => {
     const coord = pointFeature.getGeometry().getCoordinates();
+    const id = pointFeature.getId();
     // Get the rotorRadius from the feature’s properties
     const rotorRadius = pointFeature.get("rotorRadius");
     // Create the wake rectangle using the turbine’s rotorRadius
@@ -1036,6 +1169,11 @@ function updateWakeLayer() {
     const wakeFeature = new Feature({
       geometry: wakeRect
     });
+
+    if(!wakeFeature.getId()){
+      wakeFeature.setId(id);
+      wakeFeature.set("type","wake");
+    }
     wakeSource.addFeature(wakeFeature);
   });
 }
@@ -1091,8 +1229,16 @@ function updateSphereRadiusLayer() {
     const circleFeature = new Feature({
       geometry: circlePolygon
     });
-    
+
+    const id = pointFeature.getId();
+    if(!circleFeature.getId()){
+      circleFeature.setId(id);
+      circleFeature.set("type","circle");
+    }
     sphereRadiusSource.addFeature(circleFeature);
+    const wake = wakeSource.getFeatureById(id);
+    wakeToTurbine.set(wake,circleFeature);
+    turbineToWake.set(pointFeature,wake);
   });
   
   console.log(`SphereRadiusLayer aktualisiert: ${pointFeatures.length} Kreise mit Radius ${sphereRadiusValue}m gezeichnet.`);
