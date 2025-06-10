@@ -151,6 +151,9 @@ let pfeilSource = null;
 // Karten- und Zeichenebenen-Erstellung
 // ======================================================================
 
+let wakeToTurbine = new Map();
+let turbineToWake = new Map();
+
 // Drag Interaction
 
 class Drag extends PointerInteraction {
