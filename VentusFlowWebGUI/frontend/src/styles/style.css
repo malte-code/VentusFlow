@@ -76,16 +76,33 @@ html, body {
 }
 
 #clearShapesButton {
-  width: 3%;
-  font-size: 1.5vw;
+  font-size: 8px;
+  width: 10%;
+  margin: 0.5%;
   cursor: pointer;
-  border: none;
-  background-color: transparent;
+  /* border: none; */
+  background-color: #ccc;
+  border-radius: 3px 3px 3px 3px;
+  padding: 5px;
 }
 
-/* #clearShapesButton:hover {
-  color: red;
-} */
+#clearShapesButton:clicked {
+  font-size: 8px;
+  width: 10%;
+  margin: 0.5%;
+  cursor: pointer;
+  /* border: none; */
+  background-color: #ccc;
+  border-radius: 3px 3px 3px 3px;
+  padding: 5px;
+}
+
+#clearShapesButton.isDeleting{background-color:#e35d5d;}
+
+#clearShapesButton.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
 
 #rootFolder, #userInput, #hostInput, #remoteDirInput {

@@ -27,6 +27,8 @@ import './styles/style.css';
 import { Style, Icon, Stroke, RegularShape, Fill, Text } from 'ol/style';
 // Point: Zum Erzeugen von Punkt-Geometrien, z. B. für den Pfeilkopf.
 import Point from 'ol/geom/Point';
+import PointerInteraction from 'ol/interaction/Pointer.js';
+import {defaults as defaultInteractions} from 'ol/interaction/defaults.js';
 // Definiert einen Icon-Stil für Windturbinen. Dieser Stil kann dann 
 // auf Punktfeatures angewendet werden, um statt eines einfachen Punktes 
 // ein Windturbinen-Symbol anzuzeigen.
@@ -38,6 +40,7 @@ const turbineIconStyle = new Style({
     anchor: [0.5, 0.9],              // Zentriert horizontal und am unteren Rand verankert
   }),
 });
+
 
 // ======================================================================
 // OpenLayers Feature- und POLYGON Geometrie-Klassen
@@ -136,16 +139,143 @@ let squareAngleRadian = null;     // Winkel des Shapes (in Radiant)
 let translateInteraction = null;  // Interaktion zum Verschieben des Shapes
 let activeLayer = 'none';         // Aktuell aktiver Layer ('points', 'simarea', 'none')
 let editModeActive = false;       // Toggle-Status für Edit-Modus
+let isDeleting = false;           // Toggle deletion
 
 // Globale Variablen für die Zeichenebenen
 let turbineSource = null;         // Vektorquelle für Turbinen (Punkte)
 let turbineLayer = null;          // Vektorlayer für Turbinen
 let simAreaSource = null;         // Vektorquelle für Simulationsgebiet (Rechtecke/Quadrate)
 let simAreaLayer = null;          // Vektorlayer für Simulationsgebiet
+let pfeilSource = null;
 
 // ======================================================================
 // Karten- und Zeichenebenen-Erstellung
 // ======================================================================
+
+let wakeToTurbine = new Map();
+let turbineToWake = new Map();
+
+// Drag Interaction
+
+class Drag extends PointerInteraction {
+  constructor() {
+    super({
+      handleDownEvent: handleDownEvent,
+      handleDragEvent: handleDragEvent,
+      handleMoveEvent: handleMoveEvent,
+      handleUpEvent: handleUpEvent,
+    });
+
+    /**
+     * @type {import('ol/coordinate.js').Coordinate}
+     * @private
+     */
+    this.coordinate_ = null;
+
+    /**
+     * @type {string|undefined}
+     * @private
+     */
+    this.cursor_ = 'pointer';
+
+    /**
+     * @type {Feature}
+     * @private
+     */
+    this.feature_ = null;
+
+    /**
+     * @type {string|undefined}
+     * @private
+     */
+    this.previousCursor_ = undefined;
+  }
+}
+
+/**
+ * @param {import('ol/MapBrowserEvent.js').default} evt Map browser event.
+ * @return {boolean} `true` to start the drag sequence.
+ */
+function handleDownEvent(evt) {
+  
+  const map = evt.map;
+  
+
+  const feature = map.forEachFeatureAtPixel(evt.pixel, function (feature) {
+    return feature;
+  });
+
+  if (feature) {
+    this.coordinate_ = evt.coordinate;
+    this.feature_ = feature;
+  }
+
+  return !!feature;
+}
+
+/**
+ * @param {import('ol/MapBrowserEvent.js').default} evt Map browser event.
+ */
+function handleDragEvent(evt) {
+  const deltaX = evt.coordinate[0] - this.coordinate_[0];
+  const deltaY = evt.coordinate[1] - this.coordinate_[1];
+
+
+  const geometry = this.feature_.getGeometry();
+  geometry.translate(deltaX, deltaY);
+  const currType = this.feature_.get("type");
+
+  const id = this.feature_.getId()
+
+  const relatedFeature = currType === "circle"
+  ? wakeSource.getFeatureById(id)
+  : currType === "wake"
+    ? sphereRadiusSource.getFeatureById(id):
+      currType !== "turbine" ? pfeilSource.getFeatures()[0]:
+      null;
+
+  if (relatedFeature){
+    const relatedGeometry = relatedFeature.getGeometry();
+    relatedGeometry.translate(deltaX, deltaY);
+  }
+
+  this.coordinate_[0] = evt.coordinate[0];
+  this.coordinate_[1] = evt.coordinate[1];
+
+}
+
+/**
+ * @param {import('ol/MapBrowserEvent.js').default} evt Event.
+ */
+function handleMoveEvent(evt) {
+  if (this.cursor_) {
+    const map = evt.map;
+    const feature = map.forEachFeatureAtPixel(evt.pixel, function (feature) {
+      return feature;
+    });
+    const element = evt.map.getTargetElement();
+
+    if (feature) {
+      const id = feature.getId();
+      if (element.style.cursor != this.cursor_) {
+        this.previousCursor_ = element.style.cursor;
+        element.style.cursor = this.cursor_;
+      }
+    } else if (this.previousCursor_ !== undefined) {
+      element.style.cursor = this.previousCursor_;
+      this.previousCursor_ = undefined;
+    }
+  }
+}
+
+/**
+ * @return {boolean} `false` to stop the drag sequence.
+ */
+function handleUpEvent() {
+  this.coordinate_ = null;
+  this.feature_ = null;
+  return false;
+}
 
 /**
  * Erstellt die Basiskarte
@@ -155,6 +285,7 @@ function erstelleKarte() {
     source: new OSM(),
   });
   const karte = new Map({
+    interactions: defaultInteractions().extend([new Drag()]),
     target: 'map',
     layers: [rasterLayer],
     view: new View({
@@ -166,6 +297,12 @@ function erstelleKarte() {
 }
 const map = erstelleKarte();
 
+
+const uid = function(){
+  return Date.now().toString(36) + Math.random().toString(36).substr(2);
+}
+
+
 /**
  * Erstellt die Zeichenebenen für die gezeichneten Features
  */
@@ -175,7 +312,7 @@ function erstelleZeichenEbenen(map) {
   turbineLayer = new VectorLayer({
     source: turbineSource,
     style: turbineIconStyle,
-    zIndex: 10 // Standard z-index
+    zIndex: 20 // Standard z-index
   });
   
   // Layer für Simulationsgebiet (Rechtecke/Quadrate)
@@ -234,7 +371,7 @@ const wakeLayer = new VectorLayer({
       })
     ];
   },
-  zIndex: 5 // Lower than main layers
+  zIndex: 20 // Lower than main layers
 });
 map.addLayer(wakeLayer);
 
@@ -304,13 +441,16 @@ function setActiveLayer(selectionType) {
     activeLayer = 'points';
     turbineLayer.setZIndex(20); // Turbinen nach oben
     console.log('Turbinen-Layer ist nun aktiv und wurde nach oben verschoben');
+    resetDeleteButton();
   } else if (selectionType === 'Rectangle' || selectionType === 'Square') {
     activeLayer = 'simarea';
     simAreaLayer.setZIndex(20); // Simulationsgebiet nach oben
     console.log('Simulationsgebiet-Layer ist nun aktiv und wurde nach oben verschoben');
+    resetDeleteButton();
   } else {
     activeLayer = 'none';
     console.log('Kein Layer ist aktiv');
+    clearShapesButton.disabled = false;
   }
   
   // Aktualisiere auch die Select-Interaktion, falls vorhanden und Edit-Modus aktiv
@@ -357,6 +497,7 @@ function einrichtenToolbar() {
   einrichtenFormenDropdown(formenDropdown);
   einrichtenSelectInteraktion(selectShapesButton);
   einrichtenWindSlider(windSlider);
+  deleteShape(clearShapesButton,document.getElementById('map'));
   einrichtenLoeschenButton(clearShapesButton);
   
   // Neue Events für Breite und Tiefe: Bei Änderung wird das Shape entsprechend skaliert
@@ -569,7 +710,26 @@ function hinzufuegenZeichenInteraktion(formTyp) {
     console.warn(`Unbekannter Formtyp: ${formTyp}`);
     return;
   }
-  
+
+map.on('singleclick', function (e) {
+  map.forEachFeatureAtPixel(e.pixel, function (f) {
+    if(isDeleting){
+      const id = f.getId()? f.getId():"";
+      const turbine = turbineSource.getFeatureById(id);
+
+      if(turbine){
+        turbineSource.removeFeature(turbine);
+      }else{
+        simAreaSource.removeFeature(f); 
+        pfeilSource.clear();
+      }
+
+      updateWakeLayer();
+      updateSphereRadiusLayer();
+    }
+  });
+});
+
   // Beim Starten des Zeichnens: Nur bei Rechtecken/Quadraten wird das alte Rechteck entfernt.
   drawInteraction.on('drawstart', () => {
     console.log(`Zeichenvorgang für ${formTyp} gestartet`);
@@ -591,6 +751,9 @@ function hinzufuegenZeichenInteraktion(formTyp) {
       event.feature.setProperties(turbineParams);
       // Für Punkte: Füge sie hinzu, ohne currentShape zu überschreiben.
       event.feature.setStyle(null); // Damit der Layer-Stil greift
+      // For each wind turbine, it is given an ID to match their according wake region
+      event.feature.setId(uid());
+      event.feature.set("type","turbine");
       
       // Sicherstellen, dass der Punkt im Source ist, bevor wir die Layer aktualisieren
       // Kleine Verzögerung, um sicherzustellen, dass wake und sphere aktualisiert werden
@@ -962,7 +1125,7 @@ function aktualisierePfeil() {
     const laenge = dimensionen.depth / 4;
     const tiefe = dimensionen.depth;
     const pfeilFeature = erstellePfeilFeature(squareAngleRadian * 180 / Math.PI, center, laenge, tiefe);
-    const pfeilSource = new VectorSource({
+    pfeilSource = new VectorSource({
       features: [pfeilFeature],
     });
     if (arrowLayer) {
@@ -1028,6 +1191,7 @@ function updateWakeLayer() {
   
   pointFeatures.forEach(pointFeature => {
     const coord = pointFeature.getGeometry().getCoordinates();
+    const id = pointFeature.getId();
     // Get the rotorRadius from the feature’s properties
     const rotorRadius = pointFeature.get("rotorRadius");
     // Create the wake rectangle using the turbine’s rotorRadius
@@ -1036,6 +1200,11 @@ function updateWakeLayer() {
     const wakeFeature = new Feature({
       geometry: wakeRect
     });
+
+    if(!wakeFeature.getId()){
+      wakeFeature.setId(id);
+      wakeFeature.set("type","wake");
+    }
     wakeSource.addFeature(wakeFeature);
   });
 }
@@ -1091,8 +1260,16 @@ function updateSphereRadiusLayer() {
     const circleFeature = new Feature({
       geometry: circlePolygon
     });
-    
+
+    const id = pointFeature.getId();
+    if(!circleFeature.getId()){
+      circleFeature.setId(id);
+      circleFeature.set("type","circle");
+    }
     sphereRadiusSource.addFeature(circleFeature);
+    const wake = wakeSource.getFeatureById(id);
+    wakeToTurbine.set(wake,circleFeature);
+    turbineToWake.set(pointFeature,wake);
   });
   
   console.log(`SphereRadiusLayer aktualisiert: ${pointFeatures.length} Kreise mit Radius ${sphereRadiusValue}m gezeichnet.`);
@@ -1226,6 +1403,30 @@ function aktiviereSelectInteraktion() {
   });
   
   console.log(`Select-Interaktion aktiviert für ${activeLayer}`);
+}
+
+/**
+ * 
+ * @param {*} button 
+ */
+function deleteShape(button) {
+  button.addEventListener('click', () => {
+    isDeleting = !isDeleting; // toggle the flag
+    if(isDeleting){
+      button.classList.add('isDeleting');
+      document.body.style.cursor = 'not-allowed';
+    }else{
+      button.classList.remove("isDeleting");
+      document.body.style.cursor = 'default';
+    }
+  });
+}
+
+function resetDeleteButton(){
+  isDeleting = false;
+  clearShapesButton.disabled = true;
+  clearShapesButton.classList.remove("isDeleting");
+  document.body.style.cursor = 'default';
 }
 
 /**
