@@ -139,6 +139,7 @@ let squareAngleRadian = null;     // Winkel des Shapes (in Radiant)
 let translateInteraction = null;  // Interaktion zum Verschieben des Shapes
 let activeLayer = 'none';         // Aktuell aktiver Layer ('points', 'simarea', 'none')
 let editModeActive = false;       // Toggle-Status für Edit-Modus
+let isDeleting = false;           // Toggle deletion
 
 // Globale Variablen für die Zeichenebenen
 let turbineSource = null;         // Vektorquelle für Turbinen (Punkte)
@@ -440,13 +441,16 @@ function setActiveLayer(selectionType) {
     activeLayer = 'points';
     turbineLayer.setZIndex(20); // Turbinen nach oben
     console.log('Turbinen-Layer ist nun aktiv und wurde nach oben verschoben');
+    resetDeleteButton();
   } else if (selectionType === 'Rectangle' || selectionType === 'Square') {
     activeLayer = 'simarea';
     simAreaLayer.setZIndex(20); // Simulationsgebiet nach oben
     console.log('Simulationsgebiet-Layer ist nun aktiv und wurde nach oben verschoben');
+    resetDeleteButton();
   } else {
     activeLayer = 'none';
     console.log('Kein Layer ist aktiv');
+    clearShapesButton.disabled = false;
   }
   
   // Aktualisiere auch die Select-Interaktion, falls vorhanden und Edit-Modus aktiv
@@ -493,6 +497,7 @@ function einrichtenToolbar() {
   einrichtenFormenDropdown(formenDropdown);
   einrichtenSelectInteraktion(selectShapesButton);
   einrichtenWindSlider(windSlider);
+  deleteShape(clearShapesButton,document.getElementById('map'));
   einrichtenLoeschenButton(clearShapesButton);
   
   // Neue Events für Breite und Tiefe: Bei Änderung wird das Shape entsprechend skaliert
@@ -705,7 +710,26 @@ function hinzufuegenZeichenInteraktion(formTyp) {
     console.warn(`Unbekannter Formtyp: ${formTyp}`);
     return;
   }
-  
+
+map.on('singleclick', function (e) {
+  map.forEachFeatureAtPixel(e.pixel, function (f) {
+    if(isDeleting){
+      const id = f.getId()? f.getId():"";
+      const turbine = turbineSource.getFeatureById(id);
+
+      if(turbine){
+        turbineSource.removeFeature(turbine);
+      }else{
+        simAreaSource.removeFeature(f); 
+        pfeilSource.clear();
+      }
+
+      updateWakeLayer();
+      updateSphereRadiusLayer();
+    }
+  });
+});
+
   // Beim Starten des Zeichnens: Nur bei Rechtecken/Quadraten wird das alte Rechteck entfernt.
   drawInteraction.on('drawstart', () => {
     console.log(`Zeichenvorgang für ${formTyp} gestartet`);
@@ -1379,6 +1403,30 @@ function aktiviereSelectInteraktion() {
   });
   
   console.log(`Select-Interaktion aktiviert für ${activeLayer}`);
+}
+
+/**
+ * 
+ * @param {*} button 
+ */
+function deleteShape(button) {
+  button.addEventListener('click', () => {
+    isDeleting = !isDeleting; // toggle the flag
+    if(isDeleting){
+      button.classList.add('isDeleting');
+      document.body.style.cursor = 'not-allowed';
+    }else{
+      button.classList.remove("isDeleting");
+      document.body.style.cursor = 'default';
+    }
+  });
+}
+
+function resetDeleteButton(){
+  isDeleting = false;
+  clearShapesButton.disabled = true;
+  clearShapesButton.classList.remove("isDeleting");
+  document.body.style.cursor = 'default';
 }
 
 /**
