@@ -4,7 +4,7 @@
 **Hochschule:** Universität Stuttgart, HLRS  
 **Betreuer:** Prof. Dr.-Ing. Dr. h.c. Hon. Prof. Michael M. Resch, Uwe Woessner, Dr.-Ing.  
 
-**Studienarbeit Energietechnik** | April 2025 | Bericht Nr. 001  
+**Forschungsarbeit Energietechnik** | April 2025 | Bericht Nr. 001  
 **Repository:** [github.com/malte-code/VentusFlow](https://github.com/malte-code/VentusFlow)  
 **Datei:** `README.md`
 
