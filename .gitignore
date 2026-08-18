@@ -1,2 +1,9 @@
 /.DS_Store
 /result
+/.venv/
+/node_modules/
+/dist/
+**/.DS_Store
+**/__pycache__/
+*.pyc
+*.pyo
