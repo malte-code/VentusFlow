@@ -28,21 +28,68 @@
     <div id="toolbar">
       <!--Dropdown-->
       <select id="shapesDropdown">
-        <option value="None" selected>None</option>
+        <option value="None" selected>Modify</option>
+        <option value="Delete" >Delete</option>
         <option value="Point">Turbine</option>
         <option value="Rectangle">Simulationsgebiet</option>
         <!-- <option value="Square">Square</option> -->
       </select>
 
       <!--Winddirection Slider-->
+      <select name="Wind Direction" id="windDirectionSelect">
+     
+      </select>
       <input id="windDirectionSlider" type="range" min="0" max="360" value="0" step="1" />
-      <span id="windDirectionValue">0°</span>
+      <input type="number" id="windDirectionValue" value="0" step="1">
+      
+      <script>
+      const directions = [
+        { label: "E", angle: 0 },
+        { label: "ENE", angle: 22.5 },
+        { label: "NE", angle: 45 },
+        { label: "NNE", angle: 67.5 },
+        { label: "N", angle: 90 },
+        { label: "NNW", angle: 112.5 },
+        { label: "NW", angle: 135 },
+        { label: "WNW", angle: 157.5 },
+        { label: "W", angle: 180 },
+        { label: "WSW", angle: 202.5 },
+        { label: "SW", angle: 225 },
+        { label: "SSW", angle: 247.5 },
+        { label: "S", angle: 270 },
+        { label: "SSE", angle: 292.5 },
+        { label: "SE", angle: 315 },
+        { label: "ESE", angle: 337.5 }
+      ];
+
+        const select = document.getElementById("windDirectionSelect");
+      
+        directions.forEach(dir => {
+          const option = document.createElement("option");
+          option.value = dir.angle;
+          option.textContent = `${dir.label} (${dir.angle}°)`;
+          select.appendChild(option);
+        });
+
+        const numberInput = document.getElementById("windDirectionValue");
+
+        numberInput.addEventListener('keydown', (e) => {
+        // Prevent deletion if only one character left
+        const value = numberInput.value;
+        const selection = numberInput.selectionStart === 0 && numberInput.selectionEnd === value.length;
+
+        if ((e.key === 'Backspace' || e.key === 'Delete') && (value.length <= 1 || selection)) {
+          e.preventDefault();
+        }
+      });
+
+      </script>
 
       <!--Select Button-->
-      <button id="selectShapesButton" title="Toggle Edit Mode">edit shapes</button>
+      <!-- <button id="selectShapesButton" title="Toggle Edit Mode">edit shapes</button> -->
 
       <!--Clear Shapes Button-->
-      <button id="clearShapesButton" title="Delete Shapes">🗑️</button>
+      <button id="clearShapesButton" title="Delete Shapes">Delete Shape</button>
 
       <!--Modal JSON viewer-->
       <!-- <button id="showJsonButton">JSON anzeigen</button> -->
@@ -73,7 +120,7 @@
 
       <!-- Simulationsgebiet -->
       <h3>Simulationsgebiet</h3>
-      <div class="parameter-row">
+      <div class="parameter-row" id = "simAreaParam">
         <label for="widthInput">Breite (m):</label>
         <input type="number" id="widthInput" value="0" step="10">
 
@@ -115,7 +162,6 @@
         <label for="computeCores">compute cores</label>
         <input type="number" id="computeCores" value="80" step="1">
       </div>
-
     </div>
     
  
@@ -189,8 +235,30 @@
           <input type="checkbox" id="hub" checked />
           <label for="hub">Hub</label>
         </div>
-
       </div>
+
+    <div id = "saPanel">
+      <h3>Simulated Area</h3>
+      <div class="parameter-row">
+        <label for="saWidth">Width [m]:</label>
+        <span id="saWidth">0</span>
+
+        <label for="saHeight">Height [m]:</label>
+        <span id="saHeight">0</span>
+
+        <label for="minX">min X</label>
+        <input type="number" id="minX" value="0" step="1">
+
+        <label for="maxX">max X</label>
+        <input type="number" id="maxX" value="0" step="1">
+
+        <label for="minY">min Y</label>
+        <input type="number" id="minY" value="0" step="1">
+
+        <label for="maxY">max Y</label>
+        <input type="number" id="maxY" value="0" step="1">
+      </div>
+    </div>
     </div>  
     <!-- Terminal Output Panel -->
     <div id="terminal-output">

@@ -24,7 +24,7 @@ import './styles/style.css';
 // - Style: Basisklasse für die Definition von Stilregeln.
 // - Icon: Zeigt Bild-Symbole (z. B. für Icons) an.
 // - Stroke, RegularShape, Fill: Für Linien, geometrische Formen (z. B. Pfeilköpfe) und Füllungen.
-import { Style, Icon, Stroke, RegularShape, Fill, Text } from 'ol/style';
+import { Style, Icon, Stroke, RegularShape, Fill, Text, Circle } from 'ol/style.js';
 // Point: Zum Erzeugen von Punkt-Geometrien, z. B. für den Pfeilkopf.
 import Point from 'ol/geom/Point';
 import PointerInteraction from 'ol/interaction/Pointer.js';
@@ -40,8 +40,7 @@ const turbineIconStyle = new Style({
     anchor: [0.5, 0.9],              // Zentriert horizontal und am unteren Rand verankert
   }),
 });
-const turbineToWake = new Map();
-const wakeToTurbine = new Map();
+
 
 // ======================================================================
 // OpenLayers Feature- und POLYGON Geometrie-Klassen
@@ -90,6 +89,74 @@ const rectangleStyle = function(feature) {
   ];
 };
 
+const selectedStyle = function(feature) {
+  // For text positioning, we'll use the center of the rectangle
+  const geometry = feature.getGeometry();
+  const extent = geometry.getExtent();
+  const centerX = (extent[0] + extent[2]) / 2;
+  const centerY = (extent[1] + extent[3]) / 2;
+  
+  return [
+    new Style({
+      image: new RegularShape({
+        fill: new Fill({ color: 'yellow' }),
+        points: 5,
+        radius: 80,
+        radius2: 40,
+        angle: 0,
+      })
+    }),
+  ];
+};
+
+const selectedStyleSimArea = function(feature) {
+  // For text positioning, we'll use the center of the rectangle
+  const geometry = feature.getGeometry();
+  const extent = geometry.getExtent();
+  const centerX = (extent[0] + extent[2]) / 2;
+  const centerY = (extent[1] + extent[3]) / 2;
+  
+  return [
+    new Style({
+      image: new RegularShape({
+        fill: new Fill({ color: 'yellow' }),
+        points: 5,
+        radius: 100,
+        radius2: 40,
+        angle: 0,
+      }),
+      geometry: new Point([centerX, centerY])  
+    }),
+    new Style({
+      stroke: new Stroke({
+        color: 'blue',  // Rahmenfarbe
+        width: 2        // Rahmenbreite
+      }),
+      fill: new Fill({
+        color: 'rgba(0, 0, 255, 0.1)'  // Füllfarbe mit Transparenz
+      })
+    }),
+    // Text style for label
+    new Style({
+      text: new Text({
+        text: 'Simulation Area',
+        font: '16px Arial',
+        fill: new Fill({
+          color: 'rgba(0, 0, 255, 0.8)'
+        }),
+        stroke: new Stroke({
+          color: 'white',
+          width: 3
+        }),
+        offsetY: 0,
+        geometry: new Point([centerX, centerY])
+      })
+    })
+  ];
+};
+
+
+
 // ======================================================================
 // Karten- und Layer-Klassen
 // 
@@ -128,8 +195,11 @@ import { click } from 'ol/events/condition';
 // - Collection: Hilft beim Verwalten von Gruppen von Features.
 import Translate from 'ol/interaction/Translate';
 import Collection from 'ol/Collection';
+import * as olExtent from 'ol/extent';
 import { rotate } from 'ol/coordinate';
 import { parse } from 'ol/expr/expression';
+import CircleStyle from 'ol/style/Circle';
+import FeatureFormat from 'ol/format/Feature';
 
 // ======================================================================
 // Globale Variablen
@@ -140,16 +210,22 @@ let squareAngleRadian = null;     // Winkel des Shapes (in Radiant)
 let translateInteraction = null;  // Interaktion zum Verschieben des Shapes
 let activeLayer = 'none';         // Aktuell aktiver Layer ('points', 'simarea', 'none')
 let editModeActive = false;       // Toggle-Status für Edit-Modus
+let isDeleting = false;           // Toggle deletion
+let selected = null;
 
 // Globale Variablen für die Zeichenebenen
 let turbineSource = null;         // Vektorquelle für Turbinen (Punkte)
 let turbineLayer = null;          // Vektorlayer für Turbinen
 let simAreaSource = null;         // Vektorquelle für Simulationsgebiet (Rechtecke/Quadrate)
 let simAreaLayer = null;          // Vektorlayer für Simulationsgebiet
+let pfeilSource = null;
 
 // ======================================================================
 // Karten- und Zeichenebenen-Erstellung
 // ======================================================================
+
+let wakeToTurbine = new Map();
+let turbineToWake = new Map();
 
 // Drag Interaction
 
@@ -195,7 +271,6 @@ class Drag extends PointerInteraction {
 function handleDownEvent(evt) {
   
   const map = evt.map;
-  
 
   const feature = map.forEachFeatureAtPixel(evt.pixel, function (feature) {
     return feature;
@@ -216,24 +291,56 @@ function handleDragEvent(evt) {
   const deltaX = evt.coordinate[0] - this.coordinate_[0];
   const deltaY = evt.coordinate[1] - this.coordinate_[1];
 
-  const geometry = this.feature_.getGeometry();
-  geometry.translate(deltaX, deltaY);
-  const currType = this.feature_.get("type");
-
   const id = this.feature_.getId()
+  updateSelected(this.feature_);
 
-  const relatedFeature = currType === "circle"
-  ? wakeSource.getFeatureById(id)
-  : currType === "wake"
-    ? sphereRadiusSource.getFeatureById(id)
-    : null;
-
-  const relatedGeometry = relatedFeature.getGeometry();
-  relatedGeometry.translate(deltaX, deltaY);
+  if(id){
+    const turbine = turbineSource.getFeatureById(id);
+    const geometry = turbine.getGeometry();
+    geometry.translate(deltaX,deltaY);
+  }else{
+    const geometry = this.feature_.getGeometry();
+    geometry.translate(deltaX, deltaY);
+    const arrow =  pfeilSource.getFeatures()[0];
+    const arrowGeometry = arrow.getGeometry();
+    arrowGeometry.translate(deltaX, deltaY);
+  }
 
   this.coordinate_[0] = evt.coordinate[0];
   this.coordinate_[1] = evt.coordinate[1];
+  updateWakeLayer();
+  updateSphereRadiusLayer();
+}
 
+function updateSelected(currFeature){
+  const id = currFeature.getId()
+  
+  // Remove star from previously selected
+  if(selected && selected != "simArea"){
+    const prevTurbine = turbineSource.getFeatureById(selected);
+    prevTurbine.setStyle([]);
+    const panel = document.getElementById("TurbinenPanel");
+    panel.classList.remove('selected');
+  }else if(selected == "simArea"){
+    const simAreaFeature = simAreaSource.getFeatures()[0];
+    simAreaFeature.setStyle(rectangleStyle);
+    const panel = document.getElementById("simAreaParam");
+    panel.classList.remove('selected');
+  }
+
+  // Update selected with star, and remove star from previously selected
+  if(id){
+    const turbine = turbineSource.getFeatureById(id);
+    turbine.setStyle(selectedStyle);
+    const panel = document.getElementById("TurbinenPanel");
+    panel.classList.add('selected');
+    selected = id;
+  }else{
+    currFeature.setStyle(selectedStyleSimArea);
+    const panel = document.getElementById("simAreaParam");
+    panel.classList.add('selected');
+    selected = "simArea"
+  }
 }
 
 /**
@@ -304,7 +411,7 @@ function erstelleZeichenEbenen(map) {
   turbineLayer = new VectorLayer({
     source: turbineSource,
     style: turbineIconStyle,
-    zIndex: 10 // Standard z-index
+    zIndex: 20 // Standard z-index
   });
   
   // Layer für Simulationsgebiet (Rechtecke/Quadrate)
@@ -363,7 +470,7 @@ const wakeLayer = new VectorLayer({
       })
     ];
   },
-  zIndex: 5 // Lower than main layers
+  zIndex: 20 // Lower than main layers
 });
 map.addLayer(wakeLayer);
 
@@ -433,29 +540,21 @@ function setActiveLayer(selectionType) {
     activeLayer = 'points';
     turbineLayer.setZIndex(20); // Turbinen nach oben
     console.log('Turbinen-Layer ist nun aktiv und wurde nach oben verschoben');
+    resetDeleteButton();
   } else if (selectionType === 'Rectangle' || selectionType === 'Square') {
     activeLayer = 'simarea';
     simAreaLayer.setZIndex(20); // Simulationsgebiet nach oben
     console.log('Simulationsgebiet-Layer ist nun aktiv und wurde nach oben verschoben');
-  } else {
+    resetDeleteButton();
+  } else if (selectionType == "Delete"){
+    activeLayer = 'deleting';;
+    clearShapesButton.disabled = false;
+    isDeleting = true;
+  }
+   else {
     activeLayer = 'none';
     console.log('Kein Layer ist aktiv');
-  }
-  
-  // Aktualisiere auch die Select-Interaktion, falls vorhanden und Edit-Modus aktiv
-  if (editModeActive) {
-    if (selectInteraction) {
-      // Selektierte Features zurücksetzen
-      selectInteraction.getFeatures().clear();
-      map.removeInteraction(selectInteraction);
-    }
-    
-    // Nur neu aktivieren, wenn ein aktiver Layer existiert
-    if (activeLayer !== 'none') {
-      aktiviereSelectInteraktion();
-    } else {
-      selectInteraction = null;
-    }
+    clearShapesButton.disabled = false;
   }
   
   // Translate-Interaktion zurücksetzen
@@ -481,28 +580,31 @@ function einrichtenToolbar() {
   const formenDropdown = document.getElementById('shapesDropdown');
   const clearShapesButton = document.getElementById('clearShapesButton');
   const windSlider = document.getElementById('windDirectionSlider');
-  const selectShapesButton = document.getElementById('selectShapesButton');
+  const windSelect = document.getElementById("windDirectionSelect");
+  const windNumberInput = document.getElementById('windDirectionValue');
+  // const selectShapesButton = document.getElementById('selectShapesButton');
   
   einrichtenFormenDropdown(formenDropdown);
-  einrichtenSelectInteraktion(selectShapesButton);
-  einrichtenWindSlider(windSlider);
+  // einrichtenSelectInteraktion(selectShapesButton);
+  einrichtenWindSlider(windSlider,windNumberInput,windSelect);
+  deleteShape(clearShapesButton,document.getElementById('map'));
   einrichtenLoeschenButton(clearShapesButton);
   
   // Neue Events für Breite und Tiefe: Bei Änderung wird das Shape entsprechend skaliert
-  document.getElementById('widthInput').addEventListener('change', () => {
-    if (!currentShape) return;
-    const newWidth = parseFloat(document.getElementById('widthInput').value);
-    const dimensionen = ermittleDimensionen(currentShape.getGeometry(), squareAngleRadian);
-    const factor = newWidth / dimensionen.width;
-    skaliereBreite(factor);
-  });
-  document.getElementById('depthInput').addEventListener('change', () => {
-    if (!currentShape) return;
-    const newDepth = parseFloat(document.getElementById('depthInput').value);
-    const dimensionen = ermittleDimensionen(currentShape.getGeometry(), squareAngleRadian);
-    const factor = newDepth / dimensionen.depth;
-    skaliereTiefe(factor);
-  });
+  // document.getElementById('widthInput').addEventListener('change', () => {
+  //   if (!currentShape) return;
+  //   const newWidth = parseFloat(document.getElementById('widthInput').value);
+  //   const dimensionen = ermittleDimensionen(currentShape.getGeometry(), squareAngleRadian);
+  //   const factor = newWidth / dimensionen.width;
+  //   skaliereBreite(factor);
+  // });
+  // document.getElementById('depthInput').addEventListener('change', () => {
+  //   if (!currentShape) return;
+  //   const newDepth = parseFloat(document.getElementById('depthInput').value);
+  //   const dimensionen = ermittleDimensionen(currentShape.getGeometry(), squareAngleRadian);
+  //   const factor = newDepth / dimensionen.depth;
+  //   skaliereTiefe(factor);
+  // });
 }
 einrichtenToolbar();
 
@@ -569,7 +671,34 @@ const turbineSpecs = {
 };
 
 //Parameter-Panel
-document.getElementById('turbineTypeDropdown').addEventListener('change', () => {
+// document.getElementById('turbineTypeDropdown').addEventListener('change', () => {
+//   const turbineType = document.getElementById('turbineTypeDropdown').value;
+//   const specs = turbineSpecs[turbineType];
+//   if (specs) {
+//     document.getElementById('rotorRadius').textContent = specs.rotorRadius;
+//     document.getElementById('tipSpeedRatio').textContent = specs.tipSpeedRatio;
+
+//     // Hubhöhen-Dropdown füllen
+//     const hubHeightDropdown = document.getElementById('hubHeightDropdown');
+//     hubHeightDropdown.innerHTML = '';
+//     specs.hubHeights.forEach(hh => {
+//       const option = document.createElement('option');
+//       option.value = hh;
+//       option.textContent = hh;
+//       hubHeightDropdown.appendChild(option);
+//     });
+//     // Optional: ersten Wert als Standard setzen
+//     hubHeightDropdown.value = specs.hubHeights[0];
+//     // <span id="hubHeight"> entfällt, keine Synchronisierung mehr nötig
+//   }
+// });
+
+
+const turbinePanel = document.getElementById("TurbinenPanel");
+
+turbinePanel.addEventListener('change', function () {
+  const feature = turbineSource.getFeatureById(selected);
+
   const turbineType = document.getElementById('turbineTypeDropdown').value;
   const specs = turbineSpecs[turbineType];
   if (specs) {
@@ -587,9 +716,99 @@ document.getElementById('turbineTypeDropdown').addEventListener('change', () => 
     });
     // Optional: ersten Wert als Standard setzen
     hubHeightDropdown.value = specs.hubHeights[0];
-    // <span id="hubHeight"> entfällt, keine Synchronisierung mehr nötig
   }
+
+  const updatedParam = {
+    turbineType: document.getElementById('turbineTypeDropdown').value,
+    hubHeight: parseFloat(document.getElementById('hubHeightDropdown').value),
+    rotorRadius: parseFloat(document.getElementById('rotorRadius').textContent),
+    tipSpeedRatio: parseFloat(document.getElementById('tipSpeedRatio').textContent),
+    sphereRadius: parseFloat(document.getElementById('sphereRadius').value),
+    wakeDepth: parseFloat(document.getElementById('wakeDepth').value),
+  };
+
+
+  feature.setProperties(updatedParam); 
+  updateWakeLayer();
+  updateSphereRadiusLayer();
 });
+
+function updateAreaMetric(){
+  console.log('area')
+  const simAreaFeature = currentShape;
+  console.log('this is simArea: ',simAreaFeature);
+  console.log('this is current shape: ',currentShape);
+  if (simAreaFeature){
+    const geom = simAreaFeature.getGeometry();
+    const extent = geom.getExtent();
+    const minX = extent[0];
+    const minY = extent[1];
+    const maxX = extent[2];
+    const maxY = extent[3];
+
+
+    document.getElementById('saWidth').textContent = maxX-minX.toFixed(2);
+    document.getElementById('saHeight').textContent = maxY-minY.toFixed(2);
+
+    document.getElementById('minX').value = minX;
+    document.getElementById('minY').value = minY;
+    document.getElementById('maxX').value = maxX;
+    document.getElementById('maxY').value = maxY;
+
+  }
+}
+
+const saArea = document.getElementById("saPanel")
+
+saArea.addEventListener('change', function () {
+  const simAreaFeature = simAreaSource.getFeatures()[0];
+  const geom = simAreaFeature.getGeometry();
+  const extent = geom.getExtent();
+  
+  const oldMinX = extent[0];
+  const oldMinY = extent[1];
+  const oldMaxX = extent[2];
+  const oldMaxY = extent[3];
+
+  const newMinX = parseFloat(document.getElementById('minX').value);
+  const newMinY = parseFloat(document.getElementById('minY').value);
+  const newMaxX = parseFloat(document.getElementById('maxX').value);
+  const newMaxY = parseFloat(document.getElementById('maxY').value);
+
+  const coords = geom.getCoordinates()[0]; // outer ring of polygon
+
+  const updatedCoords = coords.map(([x, y]) => {
+    let newX = x;
+    let newY = y;
+
+    const EPS = 0.000001;
+
+    if (Math.abs(x - oldMinX) < EPS) {
+      newX = newMinX;
+    } else if (Math.abs(x - oldMaxX) < EPS) {
+      newX = newMaxX;
+    }
+
+    if (Math.abs(y - oldMinY) < EPS) {
+      newY = newMinY;
+    } else if (Math.abs(y - oldMaxY) < EPS) {
+      newY = newMaxY;
+    }
+
+    return [newX, newY];
+  });
+
+  if (updatedCoords.length > 2 && 
+      (updatedCoords[0][0] !== updatedCoords[updatedCoords.length - 1][0] ||
+       updatedCoords[0][1] !== updatedCoords[updatedCoords.length - 1][1])) {
+    updatedCoords.push(updatedCoords[0]);
+  }
+
+  geom.setCoordinates([updatedCoords]);
+  aktualisierePfeil();
+});
+
+
 
 // Initialisiere Hubhöhen-Dropdown beim Laden
 function initialisiereHubHeightDropdown() {
@@ -608,13 +827,13 @@ function initialisiereHubHeightDropdown() {
 initialisiereHubHeightDropdown();
 
 // Wake-Regionen
-document.getElementById('wakeDepth').addEventListener('change', () => {
-  updateWakeLayer(); // Aktualisiert die Wake-Regionen
-});
+// document.getElementById('wakeDepth').addEventListener('change', () => {
+//   updateWakeLayer(); // Aktualisiert die Wake-Regionen
+// });
 
-document.getElementById('sphereRadius').addEventListener('change', () => {
-  updateWakeLayer(); // Aktualisiert die Wake-Regionen
-});
+// document.getElementById('sphereRadius').addEventListener('change', () => {
+//   updateWakeLayer(); // Aktualisiert die Wake-Regionen
+// });
 
 // ======================================================================
 // Formen-Zeichnen und -Bearbeiten im drawlayer
@@ -698,7 +917,34 @@ function hinzufuegenZeichenInteraktion(formTyp) {
     console.warn(`Unbekannter Formtyp: ${formTyp}`);
     return;
   }
+
+  map.on('singleclick', function (evt) {
+    const feature = map.forEachFeatureAtPixel(evt.pixel, function (feature) {
+      return feature;
+    });
+    updateSelected(feature)
+  });
   
+
+map.on('singleclick', function (e) {
+  map.forEachFeatureAtPixel(e.pixel, function (f) {
+    if(isDeleting){
+      const id = f.getId()? f.getId():"";
+      const turbine = turbineSource.getFeatureById(id);
+
+      if(turbine){
+        turbineSource.removeFeature(turbine);
+      }else{
+        simAreaSource.removeFeature(f); 
+        pfeilSource.clear();
+      }
+
+      updateWakeLayer();
+      updateSphereRadiusLayer();
+    }
+  });
+});
+
   // Beim Starten des Zeichnens: Nur bei Rechtecken/Quadraten wird das alte Rechteck entfernt.
   drawInteraction.on('drawstart', () => {
     console.log(`Zeichenvorgang für ${formTyp} gestartet`);
@@ -713,7 +959,8 @@ function hinzufuegenZeichenInteraktion(formTyp) {
         hubHeight: parseFloat(document.getElementById('hubHeightDropdown').value),
         rotorRadius: parseFloat(document.getElementById('rotorRadius').textContent),
         tipSpeedRatio: parseFloat(document.getElementById('tipSpeedRatio').textContent),
-        sphereRadius: parseFloat(document.getElementById('sphereRadius').value)
+        sphereRadius: parseFloat(document.getElementById('sphereRadius').value),
+        wakeDepth: parseFloat(document.getElementById('wakeDepth').value),
       };
 
       // Attach parameters to the point feature
@@ -721,7 +968,8 @@ function hinzufuegenZeichenInteraktion(formTyp) {
       // Für Punkte: Füge sie hinzu, ohne currentShape zu überschreiben.
       event.feature.setStyle(null); // Damit der Layer-Stil greift
       // For each wind turbine, it is given an ID to match their according wake region
-      event.feature.setId(uid());
+      const id = uid();
+      event.feature.setId(id);
       event.feature.set("type","turbine");
       
       // Sicherstellen, dass der Punkt im Source ist, bevor wir die Layer aktualisieren
@@ -748,7 +996,7 @@ function hinzufuegenZeichenInteraktion(formTyp) {
       aktualisierePfeil();
       hinzufuegenTranslateInteraktion();
       aktualisiereDimensionenFelder();
-
+      updateAreaMetric()
       
     }
   });
@@ -989,8 +1237,36 @@ function skaliereTiefe(faktor) {
 /**
  * Initialisiert den Windrichtungs-Slider
  */
-function einrichtenWindSlider(slider) {
+function einrichtenWindSlider(slider,numberInput,select) {
   slider.addEventListener('input', (event) => {
+    numberInput.value = slider.value;
+    const radians = parseFloat(event.target.value) * Math.PI / 180;
+    squareAngleRadian = radians;
+    rotiereShape();
+    aktualisierePfeil();
+    aktualisiereWindSlider();
+    slider.value = (squareAngleRadian * 180 / Math.PI).toFixed(2);
+    updateSelectFromAngle(select,parseFloat(slider.value))
+  });
+
+  // When the number input changes, update the slider
+  numberInput.addEventListener('input', (event) => {
+    // Clamp the value between min and max (optional safety)
+    let value = Math.max(0, Math.min(360, numberInput.value));
+    slider.value = value;
+    const radians = parseFloat(event.target.value) * Math.PI / 180;
+    squareAngleRadian = radians;
+    rotiereShape();
+    aktualisierePfeil();
+    aktualisiereWindSlider();
+    slider.value = (squareAngleRadian * 180 / Math.PI).toFixed(2);
+    updateSelectFromAngle(select,parseFloat(slider.value))
+  });
+
+  select.addEventListener('change', (event) => {
+    const angle = parseFloat(select.value);
+    numberInput.value = angle;
+    slider.value = angle;
     const radians = parseFloat(event.target.value) * Math.PI / 180;
     squareAngleRadian = radians;
     rotiereShape();
@@ -1000,6 +1276,15 @@ function einrichtenWindSlider(slider) {
   });
   console.log('Windrichtungs-Slider eingerichtet');
 }
+
+function updateSelectFromAngle(select,angle) {
+  // Find the direction with the closest angle
+  let closest = directions.reduce((prev, curr) => {
+    return Math.abs(curr.angle - angle) < Math.abs(prev.angle - angle) ? curr : prev;
+  });
+  select.value = closest.angle;
+}
+
 
 /**
  * Aktualisiert die Anzeige des Windrichtungs-Sliders
@@ -1085,6 +1370,8 @@ function erstellePfeilFeature(winkel, center, laenge, tiefe) {
 }
 
 
+var arrowLayer = null;
+
 function aktualisierePfeil() {
   if (currentShape && squareAngleRadian !== null) {
     const center = currentShape.getGeometry().getInteriorPoint().getCoordinates();
@@ -1094,7 +1381,7 @@ function aktualisierePfeil() {
     const laenge = dimensionen.depth / 4;
     const tiefe = dimensionen.depth;
     const pfeilFeature = erstellePfeilFeature(squareAngleRadian * 180 / Math.PI, center, laenge, tiefe);
-    const pfeilSource = new VectorSource({
+    pfeilSource = new VectorSource({
       features: [pfeilFeature],
     });
     if (arrowLayer) {
@@ -1112,8 +1399,6 @@ function aktualisierePfeil() {
 }
 
 
-let arrowLayer = null;
-
 // ======================================================================
 // Wake-Rectangle-Funktionen
 // ======================================================================
@@ -1122,10 +1407,11 @@ let arrowLayer = null;
  * Hier verwenden wir feste Maße (z. B. width = 100, height = 50). 
  * Diese Werte kannst Du natürlich anpassen.
  */
-function createWakeRectangle(pointCoord, rotorRadius) {
+function createWakeRectangle(pointFeature, pointCoord, rotorRadius) {
+  const property = pointFeature.getProperties();
 
-  const sphereRadiusValue = parseFloat(document.getElementById('sphereRadius').value) * rotorRadius;
-  const depthValue             = parseFloat(document.getElementById('wakeDepth').value)    * rotorRadius;
+  const sphereRadiusValue = property['sphereRadius'] * rotorRadius;
+  const depthValue             = property['wakeDepth']    * rotorRadius;
 
   const inletdepth = sphereRadiusValue;
   const wakedepth = depthValue;
@@ -1164,7 +1450,7 @@ function updateWakeLayer() {
     // Get the rotorRadius from the feature’s properties
     const rotorRadius = pointFeature.get("rotorRadius");
     // Create the wake rectangle using the turbine’s rotorRadius
-    const wakeRect = createWakeRectangle(coord, rotorRadius);
+    const wakeRect = createWakeRectangle(pointFeature, coord, rotorRadius);
     wakeRect.rotate(squareAngleRadian, wakeRect.rotationPoint);
     const wakeFeature = new Feature({
       geometry: wakeRect
@@ -1236,66 +1522,16 @@ function updateSphereRadiusLayer() {
       circleFeature.set("type","circle");
     }
     sphereRadiusSource.addFeature(circleFeature);
-    const wake = wakeSource.getFeatureById(id);
-    wakeToTurbine.set(wake,circleFeature);
-    turbineToWake.set(pointFeature,wake);
   });
   
   console.log(`SphereRadiusLayer aktualisiert: ${pointFeatures.length} Kreise mit Radius ${sphereRadiusValue}m gezeichnet.`);
 }
 
-// Event-Listener für Änderungen am Sphere-Radius-Input
-document.getElementById('sphereRadius').addEventListener('change', () => {
-  updateSphereRadiusLayer();
-  updateWakeLayer(); // Da der Sphere-Radius auch die Wake-Regionen beeinflusst
-});
 
 // ======================================================================
 // Select- und Clear-Interaktionen
 // ======================================================================
 
-/**
- * Initialisiert die Select-Interaktion für Formen
- */
-function einrichtenSelectInteraktion(button) {
-  button.addEventListener('click', () => {
-    toggleEditMode(button);
-  });
-}
-
-let selectInteraction = null;
-
-/**
- * Schaltet den Edit-Modus ein oder aus
- * @param {HTMLElement} button - Der Edit-Button zum Anpassen des Styles
- */
-function toggleEditMode(button) {
-  editModeActive = !editModeActive;
-  
-  if (editModeActive) {
-    // Edit-Modus aktivieren
-    aktiviereSelectInteraktion();
-    button.classList.add('active');
-    button.style.backgroundColor = '#45a049'; // Grün für aktiv
-    console.log('Edit-Modus aktiviert');
-  } else {
-    // Edit-Modus deaktivieren
-    if (selectInteraction) {
-      selectInteraction.getFeatures().clear();
-      map.removeInteraction(selectInteraction);
-      selectInteraction = null;
-    }
-    
-    if (translateInteraction) {
-      map.removeInteraction(translateInteraction);
-      translateInteraction = null;
-    }
-    
-    button.classList.remove('active');
-    button.style.backgroundColor = '#ccc'; // Zurück zum Standard-Grau
-    console.log('Edit-Modus deaktiviert');
-  }
-}
 
 /**
  * Aktiviert die Select-Interaktion für den aktiven Layer
@@ -1372,6 +1608,30 @@ function aktiviereSelectInteraktion() {
   });
   
   console.log(`Select-Interaktion aktiviert für ${activeLayer}`);
+}
+
+/**
+ * 
+ * @param {*} button 
+ */
+function deleteShape(button) {
+  button.addEventListener('click', () => {
+    isDeleting = !isDeleting; // toggle the flag
+    if(isDeleting){
+      button.classList.add('isDeleting');
+      document.body.style.cursor = 'not-allowed';
+    }else{
+      button.classList.remove("isDeleting");
+      document.body.style.cursor = 'default';
+    }
+  });
+}
+
+function resetDeleteButton(){
+  isDeleting = false;
+  clearShapesButton.disabled = true;
+  clearShapesButton.classList.remove("isDeleting");
+  document.body.style.cursor = 'default';
 }
 
 /**

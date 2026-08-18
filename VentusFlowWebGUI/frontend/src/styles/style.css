@@ -76,17 +76,57 @@ html, body {
 }
 
 #clearShapesButton {
-  width: 3%;
-  font-size: 1.5vw;
+  font-size: 8px;
+  width: 10%;
+  margin: 0.5%;
   cursor: pointer;
-  border: none;
-  background-color: transparent;
+  /* border: none; */
+  background-color: #ccc;
+  border-radius: 3px 3px 3px 3px;
+  padding: 5px;
 }
 
-/* #clearShapesButton:hover {
-  color: red;
-} */
+#clearShapesButton:clicked {
+  font-size: 8px;
+  width: 10%;
+  margin: 0.5%;
+  cursor: pointer;
+  /* border: none; */
+  background-color: #ccc;
+  border-radius: 3px 3px 3px 3px;
+  padding: 5px;
+}
 
+#clearShapesButton.isDeleting{background-color:#e35d5d;}
+
+#clearShapesButton.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+#TurbinenPanel.selected{
+  background-color: #45a049;
+}
+
+#TurbinenPanel .t-confirm-button {
+  /* cursor: not-allowed; */
+  margin: 20px auto;
+}
+
+#TurbinenPanel.selected .t-confirm-button {
+  /* cursor: not-allowed; */
+  display: block;
+}
+
+#TurbinenPanel .sa-confirm-button {
+  /* cursor: not-allowed; */
+  margin: 20px auto;
+}
+
+#TurbinenPanel.selected .sa-confirm-button {
+  /* cursor: not-allowed; */
+  display: block;
+}
 
 #rootFolder, #userInput, #hostInput, #remoteDirInput {
   width: 10%;
