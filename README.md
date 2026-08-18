@@ -63,10 +63,11 @@ Ziel von **VentusFlowWebGUI** ist es, ein einfaches grafisches Werkzeug bereitzu
 
 ```bash
 # Klone das Repository
-git clone https://github.com/malte-code/VentusFlowWebGUI.git
-cd VentusFlowWebGUI
+git clone https://github.com/malte-code/VentusFlow.git
+cd VentusFlow
 
-# Installiere Node.js-Abhängigkeiten 
+# Installiere die Frontend-Abhängigkeiten
+cd VentusFlowWebGUI
 npm install
 
 # Starte die Anwendung mit Server im Entwicklungsmodus
@@ -75,16 +76,37 @@ npm start
 # Starte nur das Frontend im Entwicklungsmodus
 npm run dev
 
-# Alternativ: Baue die Anwendung (npm install notwendig) oder starte sie im Produktionsmodus (ein Build befindet sich in /dist)
+# Alternativ: Build der Anwendung für Produktion
 npm run build
+
+# Optional: Produktions-Preview mit Server-Start
 npm run serve
-
-# Wenn Remote-Cluster-Funktionen genutzt werden sollen, aktualisiere ssh-agent Pfad im serve-Script-Eintrag der package.json Datei (lauffähiger Build wird mitgeliefert)
-
-# Aktualisiere SSH-Config in index.html unter: Server Connection Setting
 ```
 
 Nach dem Start ist die Anwendung unter `http://localhost:3000` (oder einem anderen Port, der in der Konsole angezeigt wird) erreichbar.
+
+### 3. Projektstruktur
+
+```text
+VentusFlow/
+├── README.md
+├── LICENSE
+├── VentusFlowWebGUI/
+│   ├── backend/
+│   │   ├── process_input.py
+│   │   ├── server.js
+│   │   └── simulation_parameters.json
+│   ├── frontend/
+│   ├── package.json
+│   └── dist/
+├── offshorewindpark_VentusFlow/
+│   ├── system/
+│   ├── constant/
+│   └── Allpre
+└── .github/
+```
+
+> Das Repository enthält sowohl die WebGUI als auch den zugehörigen OpenFOAM-Case/Simulationsteil. Die eigentliche Web-App wird in `VentusFlowWebGUI/` gestartet.
 
 ### 3. Voreinstellungen der OpenFOAM Umgebung
 
