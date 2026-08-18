@@ -2,7 +2,7 @@
 
 **Autor:** Malte Schudek  
 **Hochschule:** Universität Stuttgart, HLRS  
-**Betreuer:** Prof. Dr.-Ing. Dr. h.c. Hon. Prof. Michael M. Resch, Uwe Woessner, Dr.-Ing.  
+**Betreuer:** Prof. Dr.-Ing. Dr. h.c. Hon. Prof. Michael M. Resch, Dr.-Ing. Uwe Woessner  
 
 **Forschungsarbeit Energietechnik** | April 2025 | Bericht Nr. 001  
 **Repository:** [github.com/malte-code/VentusFlow](https://github.com/malte-code/VentusFlow)  
