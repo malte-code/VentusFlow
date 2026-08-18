@@ -1,8 +1,11 @@
 /.DS_Store
 /result
 /.venv/
+**/.venv/
 /node_modules/
+**/node_modules/
 /dist/
+**/dist/
 **/.DS_Store
 **/__pycache__/
 *.pyc
