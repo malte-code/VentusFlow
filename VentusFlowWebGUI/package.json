@@ -9,17 +9,17 @@
     "serve": "ssh-agent sh -c 'ssh-add ~/.ssh/id_ed25519 || true; concurrently \"node backend/server.js\" \"vite preview --open\"'"
   },
   "dependencies": {
-    "cors": "^2.8.5",
-    "express": "^4.21.2",
-    "ol": "latest",
-    "ssh2": "^1.16.0",
-    "ws": "^8.13.0"
+    "cors": "^2.8.6",
+    "express": "^4.22.3",
+    "ol": "^10.11.0",
+    "ssh2": "^1.17.0",
+    "ws": "^8.22.0"
   },
   "engines": {
     "node": ">=16"
   },
   "devDependencies": {
-    "concurrently": "^9.1.2",
-    "vite": "^6.2.1"
+    "concurrently": "^9.2.5",
+    "vite": "^6.4.5"
   }
 }
